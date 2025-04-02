@@ -1,3 +1,7 @@
+import Token from "./Token";
+import User from "./User";
+
 export default interface State {
-  token: { value: string, expiration: string };
+  token: Token;
+  user: User;
 }
