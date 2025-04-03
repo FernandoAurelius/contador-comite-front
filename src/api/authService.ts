@@ -1,11 +1,11 @@
-import api from '.'
-import { useAuthStore } from '@/stores/auth'
+import api from '.';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
   async login(email: string, password: string): Promise<void> {
     const response = await api.post('/api/auth/login', { email: email, password: password });
 
-    if (response.status === 403) throw new Error('E-mail ou senha inválidos.');
+    if (response.status === 401) throw new Error('E-mail ou senha inválidos.');
 
     const store = useAuthStore();
 
@@ -22,7 +22,7 @@ export default {
     store.removeUser();
   },
 
-  async checkAuthStatus() {
+  async checkAuthStatus(): Promise<boolean> {
     const store = useAuthStore();
 
     try {
@@ -31,9 +31,11 @@ export default {
       if (response.status === 401) throw new Error();
 
       store.setUser(response.data);
+
+      return true;
     } catch (error) {
       store.removeUser();
+      return false;
     }
-
   },
-}
+};
