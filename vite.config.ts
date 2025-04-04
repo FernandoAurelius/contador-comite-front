@@ -17,4 +17,16 @@ export default defineConfig({
       '@': path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    allowedHosts: [
+      "roughy-loved-ostrich.ngrok-free.app", "localhost", "127.0.0.1"
+    ],
+    proxy: {
+      "/api": {
+        target: "https://api.formatura.floresdev.com.br",
+        changeOrigin: true,
+        secure: true
+      }
+    }
+  }
 })
