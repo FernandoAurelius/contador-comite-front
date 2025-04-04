@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
 import LoginView from '@/views/LoginView.vue';
 import HomeView from '@/views/HomeView.vue';
+import authService from '@/api/authService';
 
 const router = createRouter({
   history: createWebHistory(""),
@@ -19,10 +19,10 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to, from) => {
-  const store = useAuthStore();
+router.beforeEach(async (to, from) => {
+  const logged = await authService.userIsLogged();
 
-  if (!store.user && to.name !== "Login") return { path: "/login" }
+  if (!logged && to.name !== "Login") return { path: "/login" }
   else return true;
 });
 
