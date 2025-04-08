@@ -9,7 +9,7 @@ export const useAuthStore = defineStore("auth", {
   actions: {
     setUser(user: User) {
       this.user = user;
-    },
+  },
     removeUser() {
       this.user = null;
     }
