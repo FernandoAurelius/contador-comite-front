@@ -1,5 +1,3 @@
-import router from '@/router';
-import { useAuthStore } from '@/stores/auth';
 import axios from 'axios';
 
 const api = axios.create({

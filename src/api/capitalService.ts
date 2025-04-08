@@ -3,7 +3,7 @@ import api from ".";
 
 export default {
   async getCapital(): Promise<Capital> {
-    console.log("Capital: ", (await api.get("/capital/")).data)
+    console.log("Capital: ", (await api.get("/capital")).data)
     return (await api.get("/capital")).data;
   },
   async setInitialAmount(amount: number): Promise<Capital> {

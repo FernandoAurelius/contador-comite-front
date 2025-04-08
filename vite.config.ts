@@ -19,7 +19,7 @@ export default defineConfig({
   },
   server: {
     allowedHosts: [
-      "roughy-loved-ostrich.ngrok-free.app", "localhost", "127.0.0.1"
+      "localhost", "127.0.0.1", "formatura.floresdev.com.br"
     ],
     proxy: {
       "/api": {

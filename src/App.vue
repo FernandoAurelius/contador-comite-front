@@ -11,8 +11,8 @@ export default defineComponent({
 </script>
 
 <template>
+  <ToggleMode class="self-center mt-5" />
   <main class="flex flex-col w-full h-screen justify-center items-center">
-    <ToggleMode class="self-center mt-10" />
     <router-view />
   </main>
 </template>
