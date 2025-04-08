@@ -33,6 +33,12 @@ export default {
     store.removeUser();
   },
 
+  async register(name: string, email: string, password: string): Promise<void> {
+    const response = await api.post('/auth/register', { name, email, password, role: "user" });
+
+    if (response.status === 400) throw new Error('Registro inválido: e-mail já em uso.');
+  },
+
   async userIsLogged(): Promise<boolean> {
     const store = useAuthStore();
 

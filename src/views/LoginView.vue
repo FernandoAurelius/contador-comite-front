@@ -1,17 +1,26 @@
 <template>
-  <section class="flex justify-center items-center w-full h-full">
-    <ToggleMode />
-    <article class="w-1/2 h-2/3 flex shadow-lg">
-      <Card class="w-1/2 h-full rounded-r-none border-r-0">
-      <CardHeader class="flex flex-col justify-center items-center">
-        <CardTitle class="text-3xl">Bem-vindo de volta!</CardTitle>
-        <CardDescription class="text-md">Faça login para acessar o aplicativo</CardDescription>
-      </CardHeader>
-      <CardContent class="flex flex-col justify-center items-center h-4/6">
-        <LoginForm />
-      </CardContent>
-    </Card>
-    <ImageLoader class="rounded-l-none" />
+  <section class="flex justify-center items-start w-full h-screen p-5">
+    <article
+      class="w-full h-full max-w-md md:max-w-none md:w-4/5 lg:w-3/4 xl:w-2/3 flex flex-col md:flex-row shadow-lg rounded-xl overflow-hidden">
+      <Card
+        class="w-full h-2/3 md:h-full md:flex md:flex-col md:justify-center md:w-1/2 md:rounded-r-none rounded-b-none md:border-r-0 flex flex-col">
+        <CardHeader class="flex flex-col justify-center items-center pt-8 md:pt-6">
+          <CardTitle class="text-2xl md:text-3xl">Bem-vindo de volta!</CardTitle>
+          <CardDescription class="text-sm md:text-md">Faça login para acessar o aplicativo</CardDescription>
+        </CardHeader>
+        <CardContent class="flex flex-col justify-center items-center p-6">
+          <LoginForm />
+        </CardContent>
+        <div class="flex flex-col items-center gap-4">
+          <span class="text-xs md:text-sm self-center justify-self-center">
+            Ou, se ainda não tem uma conta...
+          </span>
+          <Button variant="outline" @click="$router.push('/register')" class="hover-lift">
+            Registre-se aqui.
+          </Button>
+        </div>
+      </Card>
+      <ImageLoader class="w-full md:w-1/2 md:h-full md:rounded-l-none" />
     </article>
   </section>
 </template>
@@ -21,7 +30,7 @@ import { defineComponent } from 'vue';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import LoginForm from '@/components/LoginForm.vue';
 import ImageLoader from '@/components/ImageLoader.vue';
-import ToggleMode from '@/components/ToggleMode.vue';
+import Button from '@/components/ui/button/Button.vue';
 
 export default defineComponent({
   name: "LoginView",
@@ -34,7 +43,7 @@ export default defineComponent({
     CardTitle,
     LoginForm,
     ImageLoader,
-    ToggleMode
+    Button
   }
 });
 </script>

@@ -120,3 +120,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+.hover-lift {
+  transition: transform 0.3s
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+}

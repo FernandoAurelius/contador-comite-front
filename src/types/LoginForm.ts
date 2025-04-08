@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 export const loginFormSchema = z.object({
-  email: z.string().min(13),
-  password: z.string().min(9)
+  email: z.string({
+    required_error: "Nome é obrigatório",
+  }),
+  password: z.string({
+    required_error: "E-mail é obrigatório"
+  })
 });
