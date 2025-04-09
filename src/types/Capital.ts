@@ -3,7 +3,8 @@ import { z } from "zod";
 export const capitalSchema = z.object({
   id: z.number(),
   currentAmount: z.number(),
-  initialAmount: z.number()
+  initialAmount: z.number(),
+  totalAmount: z.number()
 });
 
 type Capital = z.infer<typeof capitalSchema>;

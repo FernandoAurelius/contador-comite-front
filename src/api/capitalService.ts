@@ -7,12 +7,12 @@ export default {
     return (await api.get("/capital")).data;
   },
   async setInitialAmount(amount: number): Promise<Capital> {
-    return (await api.put("/capital/initial", { amount })).data;
+    return (await api.put("/capital/initial", amount)).data;
   },
   async addCapital(amount: number): Promise<Capital> {
-    return (await api.put("/capital/add", { amount })).data;
+    return (await api.put("/capital/add", amount)).data;
   },
   async removeCapital(amount: number): Promise<Capital> {
-    return (await api.put("/capital/subtract", { amount })).data;
+    return (await api.put("/capital/subtract", amount)).data;
   }
 }

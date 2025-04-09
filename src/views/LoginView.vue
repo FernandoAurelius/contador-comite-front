@@ -1,7 +1,7 @@
 <template>
   <section class="flex justify-center items-start w-full h-screen p-5">
     <article
-      class="w-full h-full max-w-md md:max-w-none md:w-4/5 lg:w-3/4 xl:w-2/3 flex flex-col md:flex-row shadow-lg rounded-xl overflow-hidden">
+      class="w-full h-19/20 md:h-5/6 max-w-md md:max-w-none md:w-4/5 lg:w-3/4 xl:w-2/3 flex flex-col md:flex-row shadow-lg rounded-xl overflow-hidden">
       <Card
         class="w-full h-2/3 md:h-full md:flex md:flex-col md:justify-center md:w-1/2 md:rounded-r-none rounded-b-none md:border-r-0 flex flex-col">
         <CardHeader class="flex flex-col justify-center items-center pt-8 md:pt-6">
