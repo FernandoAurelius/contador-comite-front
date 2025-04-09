@@ -9,8 +9,7 @@
       </div>
 
       <!-- Cards de visualização de dados principais -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
-
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
         <!-- Card 1: capital atual -->
         <Card>
           <CardContent class="pt-1">
@@ -18,7 +17,7 @@
               <div>
                 <p
                   class="text-sm bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-300 dark:to-teal-400 text-transparent mb-2 font-bold">
-                   Capital Atual</p>
+                  Capital Atual</p>
                 <p class="text-2xl font-bold">R$ {{ capital.currentAmount?.toFixed(2) }}</p>
               </div>
               <div class="h-12 w-12 ml-5 rounded-full bg-emerald-100 flex items-center justify-center">
@@ -45,6 +44,7 @@
           </CardContent>
         </Card>
 
+        <!-- Card 3: total gasto -->
         <Card>
           <CardContent class="pt-1">
             <div class="flex items-center justify-between">
@@ -52,7 +52,7 @@
                 <p
                   class="text-sm bg-clip-text bg-gradient-to-r from-rose-600 to-red-700 text-transparent dark:from-rose-300 dark:to-red-400 mb-2 font-bold">
                   Total gasto</p>
-                <p class="text-2xl font-bold">R$ {{ totalSpent.toFixed(2) }}</p>
+                <p class="text-2xl font-bold">R$ {{ totalExpenses.toFixed(2) }}</p>
               </div>
               <div class="h-12 w-12 ml-5 rounded-full bg-red-100 flex items-center justify-center">
                 <ArrowDown class="h-6 w-6 text-red-600" />
@@ -60,7 +60,33 @@
             </div>
           </CardContent>
         </Card>
+      </div>
 
+      <div class="px-6 pb-6">
+        <Card>
+          <CardContent class="pt-6">
+            <div class="flex items-center mb-2">
+              <Target class="h-5 w-5 text-purple-600 mr-2" />
+              <h3 class="font-medium">Progresso para Meta</h3>
+            </div>
+
+            <div class="mb-2">
+              <Progress :model-value="progressPercentage" class="h-2" />
+            </div>
+
+            <div class="flex justify-between text-sm">
+              <div>
+                <span class="text-gray-500">Meta:</span> R$ {{ meta.goalValue?.toFixed(2) }}
+              </div>
+              <div>
+                <span class="text-gray-500">Falta:</span> R$ {{ remainingToGoal.toFixed(2) }}
+              </div>
+              <div>
+                <span class="text-gray-500">Progresso:</span> {{ progressPercentage.toFixed(2) }}%
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   </Transition>
@@ -70,19 +96,51 @@
 import { ArrowDown, ArrowUp, DollarSign, Target } from 'lucide-vue-next';
 import { Card, CardContent } from './ui/card';
 import { Progress } from './ui/progress';
-import { defineComponent, Transition } from 'vue';
+import { defineComponent, Transition, PropType, computed } from 'vue';
 import { useCapitalStore } from '@/stores/capital';
-import Capital from '@/types/Capital';
 import Despesa from '@/types/Despesa';
 import { useDespesaStore } from '@/stores/despesas';
+import Meta from '@/types/Meta';
+import { useMetaStore } from '@/stores/meta';
+import { CapitalStatus } from '@/api/capitalService';
 
 export default defineComponent({
   name: "Dashboard",
+  props: {
+    initialCapital: {
+      type: Number,
+      required: true
+    },
+    totalRaised: {
+      type: Number,
+      required: true
+    },
+    totalSpent: {
+      type: Number,
+      required: true
+    },
+    currentBalance: {
+      type: Number,
+      required: true
+    },
+    goal: {
+      type: Number,
+      required: true
+    }
+  },
   data() {
     return {
-      capital: {} as Capital,
+      capital: {
+        currentAmount: 0,
+        initialAmount: 0,
+        totalAmount: 0,
+        initialSetted: false
+      } as CapitalStatus,
       despesas: [] as Despesa[],
-      totalSpent: 0 as number
+      meta: {} as Meta,
+      totalExpenses: 0 as number, // Renomeado para evitar conflito com props
+      progressPercentage: 0 as number,
+      remainingToGoal: 0 as number,
     }
   },
   methods: {
@@ -103,15 +161,54 @@ export default defineComponent({
     },
     getTotalSpent() {
       return this.despesas.reduce((accumulator: number, d: Despesa) => accumulator + d.totalCost, 0);
+    },
+    getProgressPercentage() {
+      return (this.meta.currentValue / this.meta.goalValue) * 100;
+    },
+    getRemainingToGoal() {
+      return this.meta.goalValue - this.meta.currentValue;
     }
+  },
+  setup(props) {
+    // Renomear totalSpent prop para totalSpentValue para evitar conflito
+    const totalSpentValue = computed(() => props.totalSpent);
+
+    const formatCurrency = (value: number) => {
+      return value.toFixed(2).replace('.', ',');
+    };
+
+    const progressPercentage = computed(() => {
+      if (props.goal <= 0) return 0;
+
+      const percentage = (props.currentBalance / props.goal) * 100;
+      return Math.min(Math.round(percentage), 100);
+    });
+
+    return {
+      formatCurrency,
+      progressPercentage,
+      totalSpentValue
+    };
   },
   async created() {
     const capitalStore = useCapitalStore();
     const despesaStore = useDespesaStore();
+    const metaStore = useMetaStore();
 
-    this.capital = await capitalStore.getCapital();
-    this.despesas = await despesaStore.getDespesas();
-    this.totalSpent = this.getTotalSpent();
+    try {
+      const capitalStatus = await capitalStore.getCapitalStatus();
+      if (capitalStatus) {
+        this.capital = capitalStatus;
+      }
+
+      this.despesas = await despesaStore.getDespesas();
+      this.meta = await metaStore.getMeta();
+      this.totalExpenses = this.getTotalSpent(); // Usando o nome correto aqui
+      this.progressPercentage = this.getProgressPercentage();
+      this.remainingToGoal = this.getRemainingToGoal();
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+    }
   },
   components: {
     Card,

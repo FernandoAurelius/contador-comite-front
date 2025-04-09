@@ -4,7 +4,7 @@
   "typescript": true,
   "tailwind": {
     "config": "",
-    "css": "src/assets/main.css",
+    "css": "componentes-v0/app/globals.css",
     "baseColor": "slate",
     "cssVariables": true,
     "prefix": ""
