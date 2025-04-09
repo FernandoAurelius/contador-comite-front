@@ -52,7 +52,7 @@
                 <p
                   class="text-sm bg-clip-text bg-gradient-to-r from-rose-600 to-red-700 text-transparent dark:from-rose-300 dark:to-red-400 mb-2 font-bold">
                   Total gasto</p>
-                <p class="text-2xl font-bold">R$ {{ totalExpenses.toFixed(2) }}</p>
+                <p class="text-2xl font-bold">R$ {{ totalSpent.toFixed(2) }}</p>
               </div>
               <div class="h-12 w-12 ml-5 rounded-full bg-red-100 flex items-center justify-center">
                 <ArrowDown class="h-6 w-6 text-red-600" />
@@ -96,52 +96,26 @@
 import { ArrowDown, ArrowUp, DollarSign, Target } from 'lucide-vue-next';
 import { Card, CardContent } from './ui/card';
 import { Progress } from './ui/progress';
-import { defineComponent, Transition, PropType, computed } from 'vue';
+import { defineComponent, Transition } from 'vue';
 import { useCapitalStore } from '@/stores/capital';
 import Despesa from '@/types/Despesa';
 import { useDespesaStore } from '@/stores/despesas';
-import Meta from '@/types/Meta';
 import { useMetaStore } from '@/stores/meta';
-import { CapitalStatus } from '@/api/capitalService';
+import { mapState } from 'pinia';
 
 export default defineComponent({
   name: "Dashboard",
-  props: {
-    initialCapital: {
-      type: Number,
-      required: true
-    },
-    totalRaised: {
-      type: Number,
-      required: true
-    },
-    totalSpent: {
-      type: Number,
-      required: true
-    },
-    currentBalance: {
-      type: Number,
-      required: true
-    },
-    goal: {
-      type: Number,
-      required: true
-    }
-  },
   data() {
     return {
-      capital: {
-        currentAmount: 0,
-        initialAmount: 0,
-        totalAmount: 0,
-        initialSetted: false
-      } as CapitalStatus,
-      despesas: [] as Despesa[],
-      meta: {} as Meta,
-      totalExpenses: 0 as number, // Renomeado para evitar conflito com props
+      totalSpent: 0 as number,
       progressPercentage: 0 as number,
       remainingToGoal: 0 as number,
     }
+  },
+  computed: {
+    ...mapState(useCapitalStore, ['capital']),
+    ...mapState(useDespesaStore, ['despesas']),
+    ...mapState(useMetaStore, ['meta'])
   },
   methods: {
     beforeEnter(el: Element) {
@@ -169,41 +143,16 @@ export default defineComponent({
       return this.meta.goalValue - this.meta.currentValue;
     }
   },
-  setup(props) {
-    // Renomear totalSpent prop para totalSpentValue para evitar conflito
-    const totalSpentValue = computed(() => props.totalSpent);
-
-    const formatCurrency = (value: number) => {
-      return value.toFixed(2).replace('.', ',');
-    };
-
-    const progressPercentage = computed(() => {
-      if (props.goal <= 0) return 0;
-
-      const percentage = (props.currentBalance / props.goal) * 100;
-      return Math.min(Math.round(percentage), 100);
-    });
-
-    return {
-      formatCurrency,
-      progressPercentage,
-      totalSpentValue
-    };
-  },
   async created() {
     const capitalStore = useCapitalStore();
     const despesaStore = useDespesaStore();
     const metaStore = useMetaStore();
 
     try {
-      const capitalStatus = await capitalStore.getCapitalStatus();
-      if (capitalStatus) {
-        this.capital = capitalStatus;
-      }
-
-      this.despesas = await despesaStore.getDespesas();
-      this.meta = await metaStore.getMeta();
-      this.totalExpenses = this.getTotalSpent(); // Usando o nome correto aqui
+      await capitalStore.getCapital();
+      await despesaStore.getDespesas();
+      await metaStore.getMeta();
+      this.totalSpent = this.getTotalSpent();
       this.progressPercentage = this.getProgressPercentage();
       this.remainingToGoal = this.getRemainingToGoal();
     } catch (error) {

@@ -1,18 +1,11 @@
 <template>
   <div class="container mx-auto px-4 py-4 sm:py-8 max-w-6xl">
-    <Dashboard
-      :initial-capital="appData.initialCapital"
-      :total-raised="appData.totalRaised"
-      :total-spent="appData.totalSpent"
-      :current-balance="currentBalance"
-      :goal="appData.goals[0]?.value || 0"
-    />
+    <Dashboard />
 
     <Tabs default-value="calendar" class="mt-6 sm:mt-8">
-      <TabsList class="grid w-full grid-cols-3">
+      <TabsList class="grid w-full grid-cols-2">
         <TabsTrigger value="calendar">Calendário</TabsTrigger>
         <TabsTrigger value="expenses">Despesas</TabsTrigger>
-        <TabsTrigger value="goals">Metas</TabsTrigger>
       </TabsList>
 
       <TabsContent value="calendar" class="mt-4">
@@ -68,15 +61,7 @@
       </TabsContent>
 
       <TabsContent value="expenses" class="mt-4">
-        <ExpensesSection :expenses="appData.expenses" @add-expense="handleAddExpense" />
-      </TabsContent>
-
-      <TabsContent value="goals" class="mt-4">
-        <GoalsSection
-          :goals="appData.goals"
-          :current-balance="currentBalance"
-          @update-goals="handleUpdateGoals"
-        />
+        <ExpensesSection :expenses="despesas" @add-expense="handleAddExpense" />
       </TabsContent>
     </Tabs>
 
@@ -113,43 +98,12 @@ import GoalsSection from '@/components/GoalsSection.vue';
 import { useCapitalStore } from '@/stores/capital';
 import { useVendaStore } from '@/stores/vendas';
 import { useMediaQuery } from '@/composables/useMediaQuery';
-
-interface Goal {
-  id: string;
-  name: string;
-  value: number;
-  description: string;
-}
-
-interface Expense {
-  id: string;
-  date: Date;
-  description: string;
-  amount: number;
-  notes?: string;
-}
-
-interface Sale {
-  date: string;
-  isTroteDay: boolean;
-  items: Array<{
-    id: string;
-    name: string;
-    count: number;
-    price: number;
-    total: number;
-  }>;
-  totalAmount: number;
-}
-
-interface AppData {
-  initialCapital: number;
-  totalRaised: number;
-  totalSpent: number;
-  goals: Goal[];
-  expenses: Expense[];
-  sales: Sale[];
-}
+import { mapActions, mapState } from 'pinia';
+import { useDespesaStore } from '@/stores/despesas';
+import Venda from '@/types/Venda';
+import Despesa from '@/types/Despesa';
+import { useMetaStore } from '@/stores/meta';
+import { toast } from 'vue-sonner';
 
 export default defineComponent({
   name: 'HomeView',
@@ -159,189 +113,101 @@ export default defineComponent({
     Popover, PopoverContent, PopoverTrigger, CalendarComponent,
     DayCarousel, DayModal, Dashboard, InitialCapitalModal, ExpensesSection, GoalsSection
   },
-  setup() {
-    // Stores
+  data() {
+    return {
+      // Estados da aplicação
+      currentWeek: new Date(),
+      selectedDay: new Date(),
+      isModalOpen: false,
+      // Data limite para eventos (29 de agosto de 2025)
+      endDate: new Date(2025, 7, 29),
+    };
+  },
+  computed: {
+    ...mapState(useCapitalStore, ['capital']),
+    ...mapState(useDespesaStore, ['despesas']),
+    ...mapState(useVendaStore, ['vendas']),
+    isMobile() {
+      return useMediaQuery('(max-width: 640px)');
+    },
+    weekStart() {
+      return startOfWeek(this.currentWeek, { weekStartsOn: 0 });
+    },
+    weekDays() {
+      return Array.from({ length: 7 }).map((_, i) => addDays(this.weekStart, i));
+    },
+    isNextWeekDisabled() {
+      return isAfter(startOfWeek(addWeeks(this.currentWeek, 1)), this.endDate);
+    },
+    currentBalance() {
+      return this.capital?.currentAmount - this.despesas.reduce((ac, d) => ac + d.totalCost, 0);
+    }
+  },
+  methods: {
+    formatDate(date: Date, formatStr: string) {
+      return format(date, formatStr, { locale: ptBR });
+    },
+    selectWeek(date: Date) {
+      this.currentWeek = date;
+      const newWeekStart = startOfWeek(date, { weekStartsOn: 1 }); // Segunda como início
+    },
+    handlePreviousWeek() {
+      this.currentWeek = subWeeks(this.currentWeek, 1);
+    },
+    handleNextWeek() {
+      const nextWeek = addWeeks(this.currentWeek, 1);
+      if (isBefore(startOfWeek(nextWeek), this.endDate)) {
+        this.currentWeek = nextWeek;
+      }
+    },
+    isAfterEndDate(day: Date) {
+      return isAfter(day, this.endDate);
+    },
+    handleDayClick(day: Date) {
+      this.selectedDay = day;
+      this.isModalOpen = true;
+    },
+    handleQuickAddSale() {
+      this.selectedDay = new Date();
+      this.isModalOpen = true;
+    },
+    async handleAddExpense(expense: Despesa) {
+      console.log('Despesa recebida:', expense);
+      const store = useDespesaStore();
+      try {
+        await store.addDespesa(expense);
+      } catch (error) {
+        console.error("Erro ao adicionar despesa", error);
+      }
+    },
+    async handleAddSale(sale: Venda) {
+      const vendaStore = useVendaStore();
+      try {
+        await vendaStore.getVendas();
+
+        toast('Venda salva com sucesso!');
+      } catch (error) {
+        toast('Erro ao salvar venda', {
+          description: `${error}`
+        });
+      }
+    },
+    handleCloseInitialCapitalModal() {
+      const capitalStore = useCapitalStore();
+      capitalStore.getCapital();
+    },
+    addDays: addDays
+  },
+  mounted() {
     const capitalStore = useCapitalStore();
     const vendaStore = useVendaStore();
+    const despesaStore = useDespesaStore();
+    const metaStore = useMetaStore();
 
-    // Estados da aplicação
-    const currentWeek = ref(new Date());
-    const selectedDay = ref<Date | null>(null);
-    const isModalOpen = ref(false);
-    const appData = ref<AppData>({
-      initialCapital: 0,
-      totalRaised: 0,
-      totalSpent: 0,
-      goals: [{ id: "1", name: "Meta Principal", value: 15000, description: "Meta para a formatura" }],
-      expenses: [],
-      sales: [],
-    });
-
-    // Data limite para eventos (29 de agosto de 2025)
-    const endDate = new Date(2025, 7, 29);
-
-    // Verificar tamanho da tela para decidir se é mobile
-    const isMobile = useMediaQuery('(max-width: 640px)');
-
-    // Função para selecionar uma semana a partir de uma data específica
-    const selectWeek = (date: Date) => {
-      currentWeek.value = date;
-      const newWeekStart = startOfWeek(date, { weekStartsOn: 1 }); // Segunda como início
-      weekStart.value = newWeekStart;
-    };
-
-    // Computed properties
-    const weekStart = computed(() => {
-      return startOfWeek(currentWeek.value, { weekStartsOn: 0 });
-    });
-
-    const weekDays = computed(() => {
-      return Array.from({ length: 7 }).map((_, i) => addDays(weekStart.value, i));
-    });
-
-    const isNextWeekDisabled = computed(() => {
-      return isAfter(startOfWeek(addWeeks(currentWeek.value, 1)), endDate);
-    });
-
-    const currentBalance = computed(() => {
-      return appData.value.initialCapital + appData.value.totalRaised - appData.value.totalSpent;
-    });
-
-    // Métodos
-    const formatDate = (date: Date, formatStr: string): string => {
-      return format(date, formatStr, { locale: ptBR });
-    };
-
-    const handlePreviousWeek = () => {
-      currentWeek.value = subWeeks(currentWeek.value, 1);
-    };
-
-    const handleNextWeek = () => {
-      const nextWeek = addWeeks(currentWeek.value, 1);
-      if (isBefore(startOfWeek(nextWeek), endDate)) {
-        currentWeek.value = nextWeek;
-      }
-    };
-
-    const isAfterEndDate = (day: Date) => {
-      return isAfter(day, endDate);
-    };
-
-    const handleDayClick = (day: Date) => {
-      selectedDay.value = day;
-      isModalOpen.value = true;
-    };
-
-    const handleQuickAddSale = () => {
-      selectedDay.value = new Date();
-      isModalOpen.value = true;
-    };
-
-    const handleAddExpense = (expense: Expense) => {
-      appData.value.expenses.push(expense);
-      appData.value.totalSpent += expense.amount;
-    };
-
-    const handleAddSale = (sale: any) => {
-      // Verifique se sale tem a propriedade totalAmount
-      if (!sale || typeof sale.totalAmount === 'undefined') {
-        console.warn('Dados de venda inválidos:', sale);
-        return;
-      }
-
-      // Cópia defensiva para evitar modificar computed diretamente
-      const updatedSales = [...appData.value.sales, sale];
-
-      // Atualize appData como um objeto inteiro
-      appData.value = {
-        ...appData.value,
-        sales: updatedSales,
-        totalRaised: appData.value.totalRaised + sale.totalAmount
-      };
-
-      // Recarregue os dados para garantir consistência
-      loadSalesData();
-    };
-
-    const handleUpdateGoals = (goals: Goal[]) => {
-      appData.value.goals = goals;
-    };
-
-    const handleCloseInitialCapitalModal = () => {
-      loadCapitalData();
-    };
-
-    const loadCapitalData = async () => {
-      try {
-        const capitalStatus = await capitalStore.getCapitalStatus();
-
-        if (capitalStatus) {
-          appData.value.initialCapital = capitalStatus.initialAmount
-            ? Number(capitalStatus.initialAmount)
-            : 0;
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados de capital:', error);
-      }
-    };
-
-    const loadSalesData = async () => {
-      try {
-        const vendas = await vendaStore.getVendas();
-
-        // Calcular o valor total das vendas
-        let totalRaised = 0;
-
-        vendas.forEach(venda => {
-          totalRaised += venda.totalPrice ? Number(venda.totalPrice) : 0;
-        });
-
-        appData.value.totalRaised = totalRaised;
-      } catch (error) {
-        console.error('Erro ao carregar dados de vendas:', error);
-      }
-    };
-
-    // Lifecycle hooks
-    onMounted(() => {
-      // Carregar dados iniciais
-      loadCapitalData();
-      loadSalesData();
-    });
-
-    // Cleanup
-    watch(
-      () => capitalStore.currentAmount,
-      (newValue) => {
-        if (newValue) {
-          appData.value.initialCapital = Number(newValue);
-        }
-      }
-    );
-
-    return {
-      currentWeek,
-      selectedDay,
-      isModalOpen,
-      appData,
-      isMobile,
-      weekStart,
-      weekDays,
-      isNextWeekDisabled,
-      currentBalance,
-      formatDate,
-      handlePreviousWeek,
-      handleNextWeek,
-      isAfterEndDate,
-      handleDayClick,
-      handleQuickAddSale,
-      handleAddExpense,
-      handleAddSale,
-      handleUpdateGoals,
-      handleCloseInitialCapitalModal,
-      addDays,
-      selectWeek
-    };
+    capitalStore.getCapital();
+    vendaStore.getVendas();
+    despesaStore.getDespesas();
+    metaStore.getMeta();
   }
 });
 </script>

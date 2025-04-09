@@ -1,4 +1,6 @@
 <template>
+  <Sonner />
+
   <div class="min-h-screen bg-gray-50">
     <!-- Mobile Header -->
     <header class="bg-white border-b sticky top-0 z-30">
@@ -112,11 +114,12 @@ import { defineComponent, ref } from 'vue';
 import { BarChart2, Home, BarChart, FileText, Settings, Menu, X, Plus } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import DayModal from '@/components/DayModal.vue';
+import Sonner from './components/ui/sonner/Sonner.vue';
 
 export default defineComponent({
   name: 'App',
   components: {
-    BarChart2, Home, BarChart, FileText, Settings, Menu, X, Plus, Button, DayModal
+    BarChart2, Home, BarChart, FileText, Settings, Menu, X, Plus, Button, DayModal, Sonner
   },
   setup() {
     const isMobileMenuOpen = ref(false);

@@ -84,7 +84,7 @@ export default defineComponent({
     // Verificar se o capital inicial já foi definido
     onMounted(async () => {
       try {
-        const capitalStatus = await capitalStore.getCapitalStatus();
+        const capitalStatus = await capitalStore.getCapital();
 
         // Só mostra o modal se o capital inicial não tiver sido definido
         if (!capitalStatus.initialSetted) {
@@ -105,7 +105,7 @@ export default defineComponent({
       error.value = null;
 
       try {
-        await capitalStore.setInitialAmount(parseFloat(initialAmount.value));
+        await capitalStore.setInitialCapital(parseFloat(initialAmount.value));
         closeModal();
       } catch (err) {
         console.error('Erro ao salvar valor inicial:', err);

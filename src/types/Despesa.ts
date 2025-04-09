@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const despesaSchema = z.object({
-  id: z.number(),
   date: z.string(),
   item: z.string(),
   quantity: z.number(),

@@ -4,7 +4,8 @@ export const capitalSchema = z.object({
   id: z.number(),
   currentAmount: z.number(),
   initialAmount: z.number(),
-  totalAmount: z.number()
+  totalAmount: z.number(),
+  initialSetted: z.boolean()
 });
 
 type Capital = z.infer<typeof capitalSchema>;

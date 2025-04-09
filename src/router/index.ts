@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
+import LoginView from '@/views/LoginView.vue';
+import RegisterView from '@/views/RegisterView.vue';
+import authService from '@/api/authService';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -34,6 +37,22 @@ const routes: Array<RouteRecordRaw> = [
       title: 'Relatórios Financeiros - Contador Comitê'
     }
   },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => LoginView,
+    meta: {
+      title: 'Autenticação - Contador Comitê'
+    }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => RegisterView,
+    meta: {
+      title: 'Registro - Contador Comitê'
+    }
+  },
   // Rota de fallback para 404
   {
     path: '/:pathMatch(.*)*',
@@ -42,7 +61,7 @@ const routes: Array<RouteRecordRaw> = [
     meta: {
       title: 'Página não encontrada - Contador Comitê'
     }
-  }
+  },
 ];
 
 const router = createRouter({
@@ -50,10 +69,13 @@ const router = createRouter({
   routes,
 });
 
-// Configurar títulos dinâmicos
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from,) => {
+  const logged = await authService.userIsLogged();
+
+  if (to.name !== "Login" && to.name !== "Register" && !logged) return { path: "/login" };
+
   document.title = to.meta.title as string || 'Contador Comitê';
-  next();
+  return true;
 });
 
 export default router;

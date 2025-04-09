@@ -32,14 +32,14 @@
                     <Button variant="outline" class="w-full justify-start text-left font-normal">
                       <Calendar class="mr-2 h-4 w-4" />
                       {{ newExpense.date
-                        ? formatDate(newExpense.date, "dd 'de' MMMM 'de' yyyy")
+                        ? formatDate(new Date(newExpense.date), "dd 'de' MMMM 'de' yyyy")
                         : "Selecione uma data" }}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent class="w-auto p-0">
                     <CalendarComponent
                       mode="single"
-                      :selected="newExpense.date"
+                      :selected="newExpense.date ? new Date(newExpense.date) : new Date()"
                       @update:model-value="onDateSelect"
                       :initial-focus="true"
                     />
@@ -52,19 +52,32 @@
               <Label for="expense-description">Descrição</Label>
               <Input
                 id="expense-description"
-                v-model="newExpense.description"
+                v-model="newExpense.item"
                 placeholder="Ex: Material para decoração"
               />
             </div>
 
             <div class="grid gap-2">
-              <Label for="expense-amount">Valor (R$)</Label>
+              <Label for="expense-quantity">Quantidade</Label>
+              <Input
+                id="expense-quantity"
+                type="number"
+                v-model="newExpense.quantity"
+                placeholder="1"
+                class="pl-4"
+                min="1"
+                step="1"
+              />
+            </div>
+
+            <div class="grid gap-2">
+              <Label for="expense-amount">Valor Unitário (R$)</Label>
               <div class="relative">
                 <DollarSign class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
                 <Input
                   id="expense-amount"
                   type="number"
-                  v-model="newExpense.amount"
+                  v-model="newExpense.unitCost"
                   placeholder="0.00"
                   class="pl-10"
                   min="0"
@@ -110,21 +123,21 @@
             </TableHeader>
             <TableBody>
               <TableRow v-for="expense in filteredExpenses" :key="expense.id">
-                <TableCell>{{ formatDateShort(expense.date) }}</TableCell>
+                <TableCell>{{ expense.date }}</TableCell>
                 <TableCell>
                   <div>
-                    {{ expense.description }}
+                    {{ expense.item }}
                     <p v-if="expense.notes" class="text-xs text-gray-500 mt-1">{{ expense.notes }}</p>
                   </div>
                 </TableCell>
-                <TableCell class="text-right font-medium">R$ {{ formatCurrency(expense.amount) }}</TableCell>
+                <TableCell class="text-right font-medium">R$ {{ formatCurrency(expense.totalCost) }}</TableCell>
                 <TableCell>
                   <div class="flex items-center gap-2">
                     <Button variant="ghost" size="icon" class="h-8 w-8">
                       <Edit class="h-4 w-4" />
                       <span class="sr-only">Editar</span>
                     </Button>
-                    <Button variant="ghost" size="icon" class="h-8 w-8 text-red-500">
+                    <Button variant="ghost" size="icon" class="h-8 w-8 text-red-500" @click="handleDeleteExpense(expense.id)">
                       <Trash class="h-4 w-4" />
                       <span class="sr-only">Excluir</span>
                     </Button>
@@ -154,7 +167,6 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, PropType } from 'vue';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Search, Plus, Edit, Trash, Calendar, DollarSign, FileText } from 'lucide-vue-next';
@@ -168,16 +180,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import Despesa from '@/types/Despesa';
+import { useDespesaStore } from '@/stores/despesas';
+import { mapActions } from 'pinia';
+import { PropType } from 'vue';
 
-interface Expense {
-  id: string;
-  date: Date;
-  description: string;
-  amount: number;
-  notes?: string;
-}
-
-export default defineComponent({
+export default {
   name: 'ExpensesSection',
   components: {
     Search,
@@ -213,94 +221,95 @@ export default defineComponent({
   },
   props: {
     expenses: {
-      type: Array as PropType<Expense[]>,
+      type: Array as PropType<Despesa[]>,
       default: () => []
     }
   },
-  setup(props, { emit }) {
-    const searchTerm = ref('');
-    const isDialogOpen = ref(false);
-    const isCalendarOpen = ref(false);
-
-    const newExpense = ref({
-      date: new Date(),
-      description: '',
-      amount: 0 as number | string,
-      notes: ''
-    });
-
-    const filteredExpenses = computed(() => {
-      const searchLower = searchTerm.value.toLowerCase();
-      return props.expenses.filter(
+  data() {
+    return {
+      searchTerm: '',
+      isDialogOpen: false,
+      isCalendarOpen: false,
+      newExpense: {
+        date: this.formatDateForBackend(new Date()),
+        item: '',
+        quantity: 1,
+        unitCost: 0,
+        totalCost: 0,
+        notes: ''
+      }
+    };
+  },
+  computed: {
+    filteredExpenses() {
+      const searchLower = this.searchTerm.toLowerCase();
+      return this.expenses.filter(
         expense =>
-          expense.description.toLowerCase().includes(searchLower) ||
+          (expense.item && expense.item.toLowerCase().includes(searchLower)) ||
           (expense.notes && expense.notes.toLowerCase().includes(searchLower))
       );
-    });
-
-    const isFormValid = computed(() => {
-      return newExpense.value.description &&
-            (typeof newExpense.value.amount === 'number' ?
-              newExpense.value.amount > 0 :
-              parseFloat(newExpense.value.amount) > 0);
-    });
-
-    const formatDate = (date: Date, formatStr: string) => {
+    },
+    isFormValid() {
+      return this.newExpense.item &&
+             this.newExpense.date &&
+             this.newExpense.quantity > 0 &&
+             this.newExpense.unitCost > 0;
+    }
+  },
+  methods: {
+    ...mapActions(useDespesaStore, ['addDespesa', 'deleteDespesa']),
+    formatDate(date: Date, formatStr: string) {
       return format(date, formatStr, { locale: ptBR });
-    };
-
-    const formatDateShort = (date: Date) => {
-      return format(date, 'dd/MM/yyyy');
-    };
-
-    const formatCurrency = (value: number) => {
+    },
+    formatDateForBackend(date: Date) {
+      return format(date, 'yyyy-MM-dd');
+    },
+    formatCurrency(value: number) {
       return value.toFixed(2).replace('.', ',');
-    };
+    },
+    onDateSelect(date: Date) {
+      this.newExpense.date = this.formatDateForBackend(date);
+      this.isCalendarOpen = false;
+    },
+    async handleAddExpense() {
+      // Calcular custo total
+      this.newExpense.totalCost = this.newExpense.quantity * this.newExpense.unitCost;
 
-    const onDateSelect = (date: Date) => {
-      newExpense.value.date = date;
-      isCalendarOpen.value = false;
-    };
+      try {
+        const despesa = {
+          ...this.newExpense,
+        };
 
-    const handleAddExpense = () => {
-      const amount = typeof newExpense.value.amount === 'string'
-        ? parseFloat(newExpense.value.amount)
-        : newExpense.value.amount;
+        await this.addDespesa(despesa);
 
-      const expense: Expense = {
-        id: Date.now().toString(),
-        date: newExpense.value.date,
-        description: newExpense.value.description,
-        amount: amount,
-        notes: newExpense.value.notes || undefined
-      };
+        // Resetar formulário
+        this.newExpense = {
+          date: this.formatDateForBackend(new Date()),
+          item: '',
+          quantity: 1,
+          unitCost: 0,
+          totalCost: 0,
+          notes: ''
+        };
 
-      emit('add-expense', expense);
+        this.isDialogOpen = false;
 
-      // Reset form
-      newExpense.value = {
-        date: new Date(),
-        description: '',
-        amount: 0,
-        notes: ''
-      };
-
-      isDialogOpen.value = false;
-    };
-
-    return {
-      searchTerm,
-      isDialogOpen,
-      isCalendarOpen,
-      newExpense,
-      filteredExpenses,
-      isFormValid,
-      formatDate,
-      formatDateShort,
-      formatCurrency,
-      onDateSelect,
-      handleAddExpense
-    };
+        // Emitir evento para informar o componente pai
+        this.$emit('add-expense');
+      } catch (error) {
+        console.error('Erro ao adicionar despesa:', error);
+      }
+    },
+    async handleDeleteExpense(id: number) {
+      if (confirm('Tem certeza que deseja excluir esta despesa?')) {
+        try {
+          await this.deleteDespesa(id);
+          this.$emit('expense-deleted');
+        } catch (error) {
+          console.error('Erro ao excluir despesa:', error);
+        }
+      }
+    }
   }
-});
+};
 </script>

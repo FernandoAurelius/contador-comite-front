@@ -9,10 +9,10 @@ export default {
     return (await api.get(`/despesas/${date}`)).data;
   },
   async addDespesa(despesa: Despesa) {
-    return (await api.post("/despesas", { despesa })).data;
+    return (await api.post("/despesas", despesa)).data;
   },
-  async updateDespesa(id: number) {
-    return (await api.put(`/despesas/${id}`)).data;
+  async updateDespesa(id: number, despesa: Despesa) {
+    return (await api.put(`/despesas/${id}`, despesa)).data;
   },
   async deleteDespesa(id: number) {
     return await api.delete(`/despesas/${id}`);
