@@ -3,7 +3,11 @@ import HomeView from '../views/HomeView.vue';
 import LoginView from '@/views/LoginView.vue';
 import RegisterView from '@/views/RegisterView.vue';
 import authService from '@/api/authService';
+import VendasView from '@/views/VendasView.vue';
+import RelatoriosView from '@/views/ReportsView.vue';
+import NotFoundView from '@/views/NotFoundView.vue';
 
+// Registrando os componentes explicitamente para evitar problemas de carregamento
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
@@ -14,17 +18,9 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: () => import('../views/DashboardView.vue'),
-    meta: {
-      title: 'Dashboard - Contador Comitê'
-    }
-  },
-  {
     path: '/vendas',
     name: 'vendas',
-    component: () => import('../views/VendasView.vue'),
+    component: VendasView,
     meta: {
       title: 'Gestão de Vendas - Contador Comitê'
     }
@@ -32,32 +28,31 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/relatorios',
     name: 'relatorios',
-    component: () => import('../views/RelatoriosView.vue'),
+    component: RelatoriosView,
     meta: {
       title: 'Relatórios Financeiros - Contador Comitê'
     }
   },
   {
     path: '/login',
-    name: 'Login',
-    component: () => LoginView,
+    name: 'login',
+    component: LoginView,
     meta: {
       title: 'Autenticação - Contador Comitê'
     }
   },
   {
     path: '/register',
-    name: 'Register',
-    component: () => RegisterView,
+    name: 'register',
+    component: RegisterView,
     meta: {
       title: 'Registro - Contador Comitê'
     }
   },
-  // Rota de fallback para 404
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
-    component: () => import('../views/NotFoundView.vue'),
+    component: NotFoundView,
     meta: {
       title: 'Página não encontrada - Contador Comitê'
     }
@@ -67,15 +62,32 @@ const routes: Array<RouteRecordRaw> = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  // Adicionando scrollBehavior para melhorar a UX
+  scrollBehavior(to, from, savedPosition) {
+    // Sempre role para o topo quando navegar para uma nova página
+    if (savedPosition) {
+      return savedPosition;
+    } else {
+      return { top: 0 };
+    }
+  }
 });
 
-router.beforeEach(async (to, from,) => {
-  const logged = await authService.userIsLogged();
+router.beforeEach(async (to, from) => {
+  try {
+    const logged = await authService.userIsLogged();
 
-  if (to.name !== "Login" && to.name !== "Register" && !logged) return { path: "/login" };
+    // Nomes das rotas em minúsculas para consistência
+    if (to.name !== "login" && to.name !== "register" && !logged) {
+      return { path: "/login" };
+    }
 
-  document.title = to.meta.title as string || 'Contador Comitê';
-  return true;
+    document.title = to.meta.title as string || 'Contador Comitê';
+    return true;
+  } catch (error) {
+    console.error('Erro na navegação:', error);
+    return { path: "/login" };
+  }
 });
 
 export default router;

@@ -109,46 +109,18 @@
       </Dialog>
     </div>
 
-    <template v-if="filteredExpenses.length > 0">
-      <Card>
-        <CardContent class="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead class="text-right">Valor</TableHead>
-                <TableHead class="w-[100px]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="expense in filteredExpenses" :key="expense.id">
-                <TableCell>{{ expense.date }}</TableCell>
-                <TableCell>
-                  <div>
-                    {{ expense.item }}
-                    <p v-if="expense.notes" class="text-xs text-gray-500 mt-1">{{ expense.notes }}</p>
-                  </div>
-                </TableCell>
-                <TableCell class="text-right font-medium">R$ {{ formatCurrency(expense.totalCost) }}</TableCell>
-                <TableCell>
-                  <div class="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" class="h-8 w-8">
-                      <Edit class="h-4 w-4" />
-                      <span class="sr-only">Editar</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" class="h-8 w-8 text-red-500" @click="handleDeleteExpense(expense.id)">
-                      <Trash class="h-4 w-4" />
-                      <span class="sr-only">Excluir</span>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </template>
+    <!-- Exibição em Grid com FinancialItem -->
+    <div v-if="filteredExpenses.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <FinancialItem
+        v-for="expense in filteredExpenses"
+        :key="expense.id"
+        :item="expense"
+        type="expense"
+        @edit="handleEditExpense"
+        @delete="handleDeleteExpense"
+      />
+    </div>
+
     <template v-else>
       <div class="text-center py-12 bg-gray-50 rounded-lg">
         <FileText class="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -169,14 +141,12 @@
 <script lang="ts">
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, Plus, Edit, Trash, Calendar, DollarSign, FileText } from 'lucide-vue-next';
+import { Search, Plus, DollarSign, FileText, Calendar } from 'lucide-vue-next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -184,22 +154,19 @@ import Despesa from '@/types/Despesa';
 import { useDespesaStore } from '@/stores/despesas';
 import { mapActions } from 'pinia';
 import { PropType } from 'vue';
+import FinancialItem from '@/components/FinancialItem.vue';
 
 export default {
   name: 'ExpensesSection',
   components: {
     Search,
     Plus,
-    Edit,
-    Trash,
-    Calendar,
     DollarSign,
     FileText,
+    Calendar,
     Button,
     Input,
     Label,
-    Card,
-    CardContent,
     Dialog,
     DialogContent,
     DialogDescription,
@@ -207,17 +174,12 @@ export default {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
     Textarea,
     Popover,
     PopoverContent,
     PopoverTrigger,
-    CalendarComponent
+    CalendarComponent,
+    FinancialItem
   },
   props: {
     expenses: {
@@ -237,7 +199,8 @@ export default {
         unitCost: 0,
         totalCost: 0,
         notes: ''
-      }
+      },
+      selectedExpense: null as Despesa | null
     };
   },
   computed: {
@@ -257,7 +220,7 @@ export default {
     }
   },
   methods: {
-    ...mapActions(useDespesaStore, ['addDespesa', 'deleteDespesa']),
+    ...mapActions(useDespesaStore, ['addDespesa', 'deleteDespesa', 'updateDespesa']),
     formatDate(date: Date, formatStr: string) {
       return format(date, formatStr, { locale: ptBR });
     },
@@ -300,10 +263,15 @@ export default {
         console.error('Erro ao adicionar despesa:', error);
       }
     },
-    async handleDeleteExpense(id: number) {
+    handleEditExpense(expense: Despesa) {
+      this.selectedExpense = expense;
+      this.newExpense = {...expense};
+      this.isDialogOpen = true;
+    },
+    async handleDeleteExpense(expense: Despesa) {
       if (confirm('Tem certeza que deseja excluir esta despesa?')) {
         try {
-          await this.deleteDespesa(id);
+          await this.deleteDespesa(expense.id);
           this.$emit('expense-deleted');
         } catch (error) {
           console.error('Erro ao excluir despesa:', error);

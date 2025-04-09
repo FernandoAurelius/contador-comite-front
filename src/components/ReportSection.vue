@@ -277,7 +277,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart } from '@/components/ui/chart-bar';
 import { DonutChart } from '@/components/ui/chart-donut';
-import axios from 'axios';
+import { useReportStore } from '@/stores/report';
+import { toast } from 'vue-sonner';
 
 interface Transaction {
   id: number;
@@ -313,6 +314,7 @@ export default defineComponent({
     BarChart, DonutChart
   },
   setup() {
+    const reportStore = useReportStore();
     const report = ref<Report | null>(null);
     const loading = ref(false);
     const error = ref<string | null>(null);
@@ -337,17 +339,16 @@ export default defineComponent({
       error.value = null;
 
       try {
-        const response = await axios.get('/api/reports', {
-          params: {
-            period: selectedPeriod.value,
-            trote: isTroteMode.value
-          }
-        });
-
-        report.value = response.data;
-      } catch (err) {
+        // Usar a store em vez de fazer a chamada diretamente
+        const data = await reportStore.fetchReport(selectedPeriod.value, isTroteMode.value);
+        report.value = data;
+        toast.success("Relatório gerado com sucesso!");
+      } catch (err: any) {
         console.error('Erro ao carregar relatório:', err);
-        error.value = 'Não foi possível carregar os dados do relatório. Por favor, tente novamente.';
+        error.value = err.response?.data || 'Não foi possível carregar os dados do relatório. Por favor, tente novamente.';
+        toast.error("Falha ao gerar relatório", {
+          description: error.value
+        });
       } finally {
         loading.value = false;
       }

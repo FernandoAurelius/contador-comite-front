@@ -7,6 +7,8 @@ interface ReportRequestParams {
 
 export default {
   async getReport(params: ReportRequestParams) {
-    return (await api.get('/api/reports', { params })).data;
+    return (await api.get('/reports', {
+      params: params,
+    })).data;
   }
 }

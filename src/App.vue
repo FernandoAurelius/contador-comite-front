@@ -103,14 +103,14 @@
       v-if="isDayModalOpen"
       :date="selectedDay"
       :is-open="isDayModalOpen"
-      @update:is-open="isDayModalOpen = false"
+      @update:is-open="closeDayModal"
       @save="handleSave"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent } from 'vue';
 import { BarChart2, Home, BarChart, FileText, Settings, Menu, X, Plus } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import DayModal from '@/components/DayModal.vue';
@@ -121,44 +121,36 @@ export default defineComponent({
   components: {
     BarChart2, Home, BarChart, FileText, Settings, Menu, X, Plus, Button, DayModal, Sonner
   },
-  setup() {
-    const isMobileMenuOpen = ref(false);
-    const isDayModalOpen = ref(false);
-    const selectedDay = ref(new Date());
-
-    const navItems = [
-      { title: 'Início', path: '/' },
-      { title: 'Dashboard', path: '/dashboard' },
-      { title: 'Vendas', path: '/vendas' },
-      { title: 'Relatórios', path: '/relatorios' }
-    ];
-
-    const mobileNavItems = [
-      { title: 'Início', path: '/', icon: Home },
-      { title: 'Dashboard', path: '/dashboard', icon: BarChart },
-      { title: 'Relatórios', path: '/relatorios', icon: FileText },
-      { title: 'Vendas', path: '/vendas', icon: Settings }
-    ];
-
-    const openAddModal = () => {
-      selectedDay.value = new Date();
-      isDayModalOpen.value = true;
-    };
-
-    const handleSave = () => {
-      isDayModalOpen.value = false;
-      // Aqui você pode adicionar uma lógica para atualizar dados após salvar
-    };
-
+  data() {
     return {
-      isMobileMenuOpen,
-      isDayModalOpen,
-      selectedDay,
-      navItems,
-      mobileNavItems,
-      openAddModal,
-      handleSave
+      isMobileMenuOpen: false,
+      isDayModalOpen: false,
+      selectedDay: new Date(),
+      navItems: [
+        { title: 'Início', path: '/' },
+        { title: 'Vendas', path: '/vendas' },
+        { title: 'Relatórios', path: '/relatorios' }
+      ],
+      mobileNavItems: [
+        { title: 'Início', path: '/', icon: Home },
+        { title: 'Dashboard', path: '/dashboard', icon: BarChart },
+        { title: 'Relatórios', path: '/relatorios', icon: FileText },
+        { title: 'Vendas', path: '/vendas', icon: Settings }
+      ]
     };
+  },
+  methods: {
+    openAddModal() {
+      this.selectedDay = new Date();
+      this.isDayModalOpen = true;
+    },
+    closeDayModal(value: boolean) {
+      this.isDayModalOpen = value;
+    },
+    handleSave() {
+      this.isDayModalOpen = false;
+      // Aqui você pode adicionar uma lógica para atualizar dados após salvar
+    }
   }
 });
 </script>

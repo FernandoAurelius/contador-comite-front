@@ -32,7 +32,8 @@
               <SelectValue placeholder="Tipo de item" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os itens</SelectItem>
+              <!-- A key diferença aqui: valor vazio não permitido -->
+              <SelectItem value="todos">Todos os itens</SelectItem>
               <SelectItem value="REFRI_COPO">Refri (copo)</SelectItem>
               <SelectItem value="REFRI_GARRAFA">Refri (garrafa)</SelectItem>
               <SelectItem value="PICOLE">Picolé</SelectItem>
@@ -71,71 +72,44 @@
         </div>
       </div>
 
-      <!-- Tabela de vendas -->
-      <Card>
-        <CardContent class="p-0">
-          <div v-if="loading" class="flex justify-center py-10">
-            <Loader2 class="h-8 w-8 animate-spin text-gray-400" />
-          </div>
+      <!-- Loading state -->
+      <div v-if="loading" class="flex justify-center py-10">
+        <Loader2 class="h-8 w-8 animate-spin text-gray-400" />
+      </div>
 
-          <div v-else-if="filteredVendas.length === 0" class="text-center py-12">
-            <FileBarChart class="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 class="text-lg font-medium text-gray-900 mb-1">Nenhuma venda encontrada</h3>
-            <p class="text-gray-500 mb-4">
-              {{ hasFilters ? 'Nenhuma venda corresponde aos filtros aplicados.' : 'Adicione sua primeira venda para começar.' }}
-            </p>
-            <Button variant="outline" v-if="hasFilters" @click="clearFilters">
-              Limpar filtros
-            </Button>
-          </div>
+      <!-- Empty state -->
+      <div v-else-if="filteredVendas.length === 0" class="text-center py-12 bg-gray-50 rounded-lg">
+        <FileBarChart class="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <h3 class="text-lg font-medium text-gray-900 mb-1">Nenhuma venda encontrada</h3>
+        <p class="text-gray-500 mb-4">
+          {{ hasFilters ? 'Nenhuma venda corresponde aos filtros aplicados.' : 'Adicione sua primeira venda para começar.' }}
+        </p>
+        <Button variant="outline" v-if="hasFilters" @click="clearFilters">
+          Limpar filtros
+        </Button>
+      </div>
 
-          <Table v-else>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Qtde</TableHead>
-                <TableHead>Preço Unitário</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead class="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="venda in filteredVendas" :key="venda.id">
-                <TableCell>{{ formatDate(new Date(venda.date)) }}</TableCell>
-                <TableCell>
-                  <div class="flex flex-col">
-                    <span>{{ getItemTypeName(venda.itemType) }}</span>
-                    <span v-if="venda.notes" class="text-xs text-gray-500">{{ venda.notes }}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{{ venda.quantity }}</TableCell>
-                <TableCell>R$ {{ formatCurrency(venda.unitPrice) }}</TableCell>
-                <TableCell>R$ {{ formatCurrency(venda.totalPrice) }}</TableCell>
-                <TableCell class="text-right">
-                  <div class="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="icon" @click="editVenda(venda)">
-                      <Edit class="h-4 w-4" />
-                      <span class="sr-only">Editar</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" class="text-red-500" @click="confirmDeleteVenda(venda)">
-                      <Trash class="h-4 w-4" />
-                      <span class="sr-only">Excluir</span>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell colSpan="4" class="text-right font-medium">Total:</TableCell>
-                <TableCell class="font-bold">R$ {{ formatCurrency(totalVendas) }}</TableCell>
-                <TableCell></TableCell>
-              </TableRow>
-            </TableFooter>
-          </Table>
-        </CardContent>
-      </Card>
+      <!-- Grid de vendas usando FinancialItem -->
+      <div v-else>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <FinancialItem
+            v-for="venda in filteredVendas"
+            :key="venda.id"
+            :item="venda"
+            type="sale"
+            @edit="editVenda"
+            @delete="confirmDeleteVenda"
+          />
+        </div>
+
+        <!-- Totais -->
+        <div class="mt-6 bg-gray-50 p-4 rounded-lg">
+          <div class="flex justify-between items-center">
+            <span class="font-medium">Total de vendas:</span>
+            <span class="font-bold">R$ {{ formatCurrency(totalVendas) }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Modal de confirmação de exclusão -->
@@ -166,22 +140,21 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from 'vue';
+import { defineComponent } from 'vue';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import {
-  Search, Calendar, X, Edit, Trash, Plus, FileBarChart, Loader2
+  Search, Calendar, X, Plus, FileBarChart, Loader2
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import DayModal from '@/components/DayModal.vue';
+import FinancialItem from '@/components/FinancialItem.vue';
 
 import { useVendaStore } from '@/stores/vendas';
 import Venda from '@/types/Venda';
@@ -189,81 +162,74 @@ import Venda from '@/types/Venda';
 export default defineComponent({
   name: 'VendasView',
   components: {
-    Search, Calendar, X, Edit, Trash, Plus, FileBarChart, Loader2,
-    Button, Input, Card, CardContent,
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter,
+    Search, Calendar, X, Plus, FileBarChart, Loader2,
+    Button, Input,
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
     Popover, PopoverContent, PopoverTrigger,
     CalendarComponent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-    DayModal
+    DayModal, FinancialItem
   },
-  setup() {
-    const vendaStore = useVendaStore();
-    const vendas = ref<Venda[]>([]);
-    const loading = ref(false);
-
-    // Estado para modais
-    const selectedDate = ref<Date | null>(null);
-    const isDayModalOpen = ref(false);
-    const isDeleteDialogOpen = ref(false);
-    const vendaToDelete = ref<Venda | null>(null);
-
-    // Filtros
-    const filters = ref({
-      search: '',
-      itemType: '',
-      dateRange: false,
-      dateStart: null as Date | null,
-      dateEnd: null as Date | null
-    });
-
-    const filteredVendas = computed(() => {
-      return vendas.value.filter(venda => {
-        const searchLower = filters.value.search.toLowerCase();
+  data() {
+    return {
+      vendas: [] as Venda[],
+      loading: false,
+      selectedDate: null as Date | null,
+      isDayModalOpen: false,
+      isDeleteDialogOpen: false,
+      vendaToDelete: null as Venda | null,
+      filters: {
+        search: '',
+        itemType: 'todos', // Valor inicial válido, não vazio
+        dateRange: false,
+        dateStart: null as Date | null,
+        dateEnd: null as Date | null
+      }
+    };
+  },
+  computed: {
+    filteredVendas() {
+      return this.vendas.filter(venda => {
+        const searchLower = this.filters.search.toLowerCase();
         const matchesSearch =
-          getItemTypeName(venda.itemType).toLowerCase().includes(searchLower) ||
+          this.getItemTypeName(venda.itemType).toLowerCase().includes(searchLower) ||
           (venda.notes && venda.notes.toLowerCase().includes(searchLower));
 
         const matchesItemType =
-          !filters.value.itemType || venda.itemType === filters.value.itemType;
+          this.filters.itemType === 'todos' || venda.itemType === this.filters.itemType;
 
-        const matchesDateRange = !filters.value.dateRange ||
-          (new Date(venda.date) >= filters.value.dateStart! &&
-           new Date(venda.date) <= filters.value.dateEnd!);
+        const matchesDateRange = !this.filters.dateRange ||
+          (new Date(venda.date) >= this.filters.dateStart! &&
+           new Date(venda.date) <= this.filters.dateEnd!);
 
         return matchesSearch && matchesItemType && matchesDateRange;
       });
-    });
-
-    const totalVendas = computed(() => {
-      return filteredVendas.value.reduce((total, venda) => total + venda.totalPrice, 0);
-    });
-
-    const hasFilters = computed(() => {
-      return filters.value.search || filters.value.itemType || filters.value.dateRange;
-    });
-
-    // Métodos
-    const loadVendas = async () => {
-      loading.value = true;
+    },
+    totalVendas() {
+      return this.filteredVendas.reduce((total, venda) => total + venda.totalPrice, 0);
+    },
+    hasFilters() {
+      return this.filters.search || this.filters.itemType !== 'todos' || this.filters.dateRange;
+    }
+  },
+  methods: {
+    async loadVendas() {
+      this.loading = true;
       try {
-        vendas.value = await vendaStore.getVendas();
+        const vendaStore = useVendaStore();
+        this.vendas = await vendaStore.getVendas();
       } catch (error) {
         console.error('Erro ao carregar vendas:', error);
       } finally {
-        loading.value = false;
+        this.loading = false;
       }
-    };
-
-    const formatDate = (date: Date) => {
+    },
+    formatDate(date: Date) {
       return format(date, 'dd/MM/yyyy', { locale: ptBR });
-    };
-
-    const formatCurrency = (value: number): string => {
+    },
+    formatCurrency(value: number): string {
       return value.toFixed(2).replace('.', ',');
-    };
-
-    const getItemTypeName = (itemType: string): string => {
+    },
+    getItemTypeName(itemType: string): string {
       const types: Record<string, string> = {
         'REFRI_COPO': 'Refri (copo)',
         'REFRI_GARRAFA': 'Refri (garrafa)',
@@ -273,77 +239,56 @@ export default defineComponent({
         'OUTROS': 'Outros'
       };
       return types[itemType] || itemType;
-    };
-
-    const clearFilters = () => {
-      filters.value = {
+    },
+    clearFilters() {
+      this.filters = {
         search: '',
-        itemType: '',
+        itemType: 'todos', // Usando o valor não-vazio
         dateRange: false,
         dateStart: null,
         dateEnd: null
       };
-    };
-
-    const onDateRangeChange = (range: { from: Date; to: Date }) => {
-      filters.value.dateStart = range.from;
-      filters.value.dateEnd = range.to || range.from;
-      filters.value.dateRange = true;
-    };
-
-    const openAddVendaModal = () => {
-      selectedDate.value = new Date();
-      isDayModalOpen.value = true;
-    };
-
-    const editVenda = (venda: Venda) => {
-      // Para editar, você provavelmente precisaria de um modal específico
-      // ou poderia adaptar o DayModal para receber uma venda existente
+    },
+    onDateRangeChange(range: { from: Date; to: Date }) {
+      this.filters.dateStart = range.from;
+      this.filters.dateEnd = range.to || range.from;
+      this.filters.dateRange = true;
+    },
+    openAddVendaModal() {
+      this.selectedDate = new Date();
+      this.isDayModalOpen = true;
+    },
+    editVenda(venda: Venda) {
+      // Para editar, poderia adaptar o DayModal para receber uma venda existente
       console.log('Editar venda:', venda);
-    };
-
-    const confirmDeleteVenda = (venda: Venda) => {
-      vendaToDelete.value = venda;
-      isDeleteDialogOpen.value = true;
-    };
-
-    const deleteVenda = async () => {
-      if (!vendaToDelete.value) return;
+    },
+    confirmDeleteVenda(venda: Venda) {
+      this.vendaToDelete = venda;
+      this.isDeleteDialogOpen = true;
+    },
+    async deleteVenda() {
+      if (!this.vendaToDelete) return;
 
       try {
-        await vendaStore.deleteVenda(vendaToDelete.value.id);
-        await loadVendas(); // Recarregar após deletar
+        const vendaStore = useVendaStore();
+        await vendaStore.deleteVenda(this.vendaToDelete.id);
+        await this.loadVendas(); // Recarregar após deletar
       } catch (error) {
         console.error('Erro ao excluir venda:', error);
       } finally {
-        isDeleteDialogOpen.value = false;
-        vendaToDelete.value = null;
+        this.isDeleteDialogOpen = false;
+        this.vendaToDelete = null;
       }
-    };
-
-    onMounted(loadVendas);
-
-    return {
-      vendas,
-      loading,
-      selectedDate,
-      isDayModalOpen,
-      isDeleteDialogOpen,
-      filters,
-      filteredVendas,
-      totalVendas,
-      hasFilters,
-      formatDate,
-      formatCurrency,
-      getItemTypeName,
-      clearFilters,
-      onDateRangeChange,
-      openAddVendaModal,
-      editVenda,
-      confirmDeleteVenda,
-      deleteVenda,
-      loadVendas
-    };
+    }
+  },
+  // Usar beforeMount em vez de mounted para garantir que os dados sejam carregados antes do template ser renderizado
+  beforeMount() {
+    this.loadVendas();
+  },
+  beforeUnmount() {
+    // Limpar referências para evitar vazamentos de memória
+    this.selectedDate = null;
+    this.vendaToDelete = null;
   }
 });
 </script>
