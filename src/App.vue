@@ -67,7 +67,7 @@
     <!-- Footer -->
     <footer class="border-t bg-white py-6 hidden md:block">
       <div class="container mx-auto px-4 text-center text-sm text-gray-500">
-        <p>© {{ new Date().getFullYear() }} CEMIC 2025 - @FernandoAurelius</p>
+        <p>© {{ new Date().getFullYear() }} CEMIC - @FernandoAurelius</p>
       </div>
     </footer>
 
