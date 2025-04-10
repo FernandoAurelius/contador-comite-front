@@ -21,12 +21,5 @@ export default defineConfig({
     allowedHosts: [
       "localhost", "127.0.0.1", "formatura.floresdev.com.br"
     ],
-    proxy: {
-      "/api": {
-        target: "https://api.formatura.floresdev.com.br",
-        changeOrigin: true,
-        secure: true
-      }
-    }
   }
 })
