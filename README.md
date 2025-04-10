@@ -1,39 +1,93 @@
-# contador-comite-front
+# Contador Comitê - Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+![Vue.js](https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vue.js&logoColor=4FC08D)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Pinia](https://img.shields.io/badge/Pinia-F7D336?style=for-the-badge&logo=vue.js&logoColor=black)
 
-## Recommended IDE Setup
+## Visão Geral
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Interface de usuário para o sistema Contador Comitê, desenvolvido para gestão financeira de comitês de formatura. Este frontend oferece uma interface moderna, responsiva e intuitiva para controle de receitas, despesas e geração de relatórios financeiros.
 
-## Type Support for `.vue` Imports in TS
+## Funcionalidades
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+### Dashboard
+- Visualização rápida de indicadores financeiros
+- Progresso da meta financeira
+- Saldo atual
+- Visão geral de receitas e despesas recentes
 
-## Customize configuration
+### Calendário de Vendas
+- Visualização de vendas por dia em formato de calendário
+- Navegação semanal
+- Adição rápida de vendas para qualquer data
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### Gestão de Vendas
+- Registro detalhado de vendas por produto
+- Suporte a diferentes tipos de produtos (refrigerante em copo/garrafa, picolé)
+- Modo especial para dias de trote (bingo, correio elegante, cadeia do amor)
+- Edição e exclusão de vendas
+- Adição de itens customizados
 
-## Project Setup
+### Gestão de Despesas
+- Cadastro de despesas com descrição, quantidade e valor
+- Visualização de despesas agrupadas
+- Edição e exclusão de despesas
 
-```sh
+### Relatórios Financeiros
+- Geração de relatórios por período (diário, semanal, mensal)
+- Comparativo entre receitas e despesas
+- Gráficos de distribuição por categoria
+- Detalhamento de itens por tipo
+- Relatórios específicos para eventos de trote
+
+### Autenticação
+- Sistema de login seguro
+- Perfis de usuário com diferentes permissões
+- Proteção de rotas
+
+### Recursos de UI/UX
+- Design responsivo para desktop e mobile
+- Navegação inferior em dispositivos móveis
+- Temas visuais modernos com Tailwind CSS
+- Feedback visual com notificações toast
+- Formulários com validação em tempo real
+
+## Tecnologias Utilizadas
+
+- **Vue 3**: Framework progressivo para construção de interfaces
+- **TypeScript**: Tipagem estática para melhor qualidade de código
+- **Pinia**: Gerenciamento de estado da aplicação
+- **Vue Router**: Navegação entre páginas
+- **Tailwind CSS**: Framework de utilidades CSS para design responsivo
+- **ShadcnUI**: Componentes UI reutilizáveis e acessíveis
+- **Lucide Icons**: Biblioteca de ícones SVG
+- **date-fns**: Utilitários para manipulação de datas
+- **Recharts**: Biblioteca para visualização de dados
+- **Axios**: Cliente HTTP para requisições API
+- **Zod**: Validação de esquemas
+
+## Configuração do Projeto
+
+### Pré-requisitos
+
+- Node.js 16+ e NPM
+- Backend da aplicação executando
+
+### Configuração de Desenvolvimento
+
+```bash
+# Instalação de dependências
 npm install
-```
 
-### Compile and Hot-Reload for Development
-
-```sh
+# Execução em ambiente de desenvolvimento (hot-reload)
 npm run dev
-```
 
-### Type-Check, Compile and Minify for Production
-
-```sh
+# Compilação e minificação para produção
 npm run build
-```
 
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
+# Verificação de tipos e linting
 npm run lint
 ```
+
+## Estrutura do Projeto

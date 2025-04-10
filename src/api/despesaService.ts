@@ -9,7 +9,9 @@ export default {
     return (await api.get(`/despesas/${date}`)).data;
   },
   async addDespesa(despesa: Despesa) {
-    return (await api.post("/despesas", despesa)).data;
+    // Remover o ID ao criar uma nova despesa
+    const { id, ...despesaWithoutId } = despesa as any;
+    return (await api.post("/despesas", despesaWithoutId)).data;
   },
   async updateDespesa(id: number, despesa: Despesa) {
     return (await api.put(`/despesas/${id}`, despesa)).data;

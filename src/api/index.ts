@@ -1,18 +1,11 @@
 import axios from 'axios';
 
-// Configurando a instância do axios com as configurações necessárias
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '',
-  withCredentials: true, // Importante para enviar cookies
+  baseURL: "/api",
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
-});
-
-// Interceptor para debugging de requisições
-api.interceptors.request.use(request => {
-  console.log('API Request:', request.method?.toUpperCase(), request.url, request.params || request.data);
-  return request;
 });
 
 // Interceptor para debugging de respostas

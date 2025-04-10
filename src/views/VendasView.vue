@@ -156,7 +156,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import DayModal from '@/components/DayModal.vue';
 import FinancialItem from '@/components/FinancialItem.vue';
 
-import { useVendaStore } from '@/stores/vendas';
+import useVendaStore from '@/stores/vendas';
 import Venda from '@/types/Venda';
 
 export default defineComponent({

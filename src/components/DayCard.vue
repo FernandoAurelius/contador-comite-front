@@ -57,7 +57,7 @@ import { format, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Coffee, Droplet, IceCream } from 'lucide-vue-next';
 import Venda from '@/types/Venda';
-import { useVendaStore } from '@/stores/vendas';
+import useVendaStore from '@/stores/vendas';
 
 export default defineComponent({
   name: "DayCard",
@@ -153,7 +153,7 @@ export default defineComponent({
           const day = this.date.getDate().toString().padStart(2, '0');
           const month = (this.date.getMonth() + 1).toString().padStart(2, '0');
           const year = this.date.getFullYear();
-          const dateStr = `${day}-${month}-${year}`;
+          const dateStr = `${year}-${month}-${day}`;
 
           this.sales = await vendaStore.getVendaByDate(dateStr);
           this.hasSales = this.sales && this.sales.length > 0;

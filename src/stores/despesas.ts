@@ -15,10 +15,11 @@ export const useDespesaStore = defineStore("despesa", {
       const day = date.getDate().toString().padStart(2, '0');
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();
-      const dateStr = `${year}-${month}-${day}`;
+      const dateStr = `${day}-${month}-${year}`;
       return await despesaService.getDespesaByDate(dateStr);
     },
     async addDespesa(despesa: Despesa): Promise<Despesa> {
+      // A remoção do id agora é feita no service
       const newDespesa = await despesaService.addDespesa(despesa);
       await this.getDespesas();
       return newDespesa;

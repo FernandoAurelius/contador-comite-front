@@ -15,6 +15,7 @@
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex items-center space-x-1">
           <router-link
+            v-if="logged"
             v-for="item in navItems"
             :key="item.path"
             :to="item.path"
@@ -66,7 +67,7 @@
     <!-- Footer -->
     <footer class="border-t bg-white py-6 hidden md:block">
       <div class="container mx-auto px-4 text-center text-sm text-gray-500">
-        <p>© {{ new Date().getFullYear() }} Contador do Comitê. Todos os direitos reservados.</p>
+        <p>© {{ new Date().getFullYear() }} CEMIC 2025 - @FernandoAurelius</p>
       </div>
     </footer>
 
@@ -110,11 +111,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, onMounted } from 'vue';
 import { BarChart2, Home, BarChart, FileText, Settings, Menu, X, Plus } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import DayModal from '@/components/DayModal.vue';
 import Sonner from './components/ui/sonner/Sonner.vue';
+import { useAuthStore } from './stores/auth';
+import { mapState } from 'pinia';
 
 export default defineComponent({
   name: 'App',
@@ -149,8 +152,42 @@ export default defineComponent({
     },
     handleSave() {
       this.isDayModalOpen = false;
-      // Aqui você pode adicionar uma lógica para atualizar dados após salvar
+    },
+    setFavicon() {
+      // Criamos um favicon dinâmico baseado no ícone BarChart2
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        // Estilo similar ao BarChart2 da biblioteca Lucide
+        ctx.fillStyle = '#10b981'; // cor emerald-600
+
+        // Desenhando as barras do gráfico (similar ao BarChart2)
+        // Primeira barra
+        ctx.fillRect(6, 22, 4, 6);
+        // Segunda barra
+        ctx.fillRect(14, 16, 4, 12);
+        // Terceira barra
+        ctx.fillRect(22, 8, 4, 20);
+
+        // Convertendo para URL de dados e definindo como favicon
+        const dataUrl = canvas.toDataURL('image/png');
+
+        let link: HTMLLinkElement = document.querySelector("link[rel*='icon']") || document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = dataUrl;
+        document.head.appendChild(link);
+      }
     }
+  },
+  computed: {
+    ...mapState(useAuthStore, ["logged"]),
+  },
+  mounted() {
+    this.setFavicon();
   }
 });
 </script>

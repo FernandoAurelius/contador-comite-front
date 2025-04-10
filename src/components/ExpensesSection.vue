@@ -101,8 +101,11 @@
             <Button variant="outline" @click="isDialogOpen = false">
               Cancelar
             </Button>
-            <Button @click="handleAddExpense" :disabled="!isFormValid">
-              Adicionar Despesa
+            <Button
+              @click="handleAddExpense"
+              :disabled="!isFormValid || (isEditing && !hasChanges)"
+            >
+              {{ isEditing ? (hasChanges ? 'Atualizar' : 'Fechar') : 'Adicionar' }} Despesa
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -155,6 +158,7 @@ import { useDespesaStore } from '@/stores/despesas';
 import { mapActions } from 'pinia';
 import { PropType } from 'vue';
 import FinancialItem from '@/components/FinancialItem.vue';
+import { toast } from 'vue-sonner';
 
 export default {
   name: 'ExpensesSection',
@@ -200,7 +204,9 @@ export default {
         totalCost: 0,
         notes: ''
       },
-      selectedExpense: null as Despesa | null
+      selectedExpense: null as Despesa | null,
+      initialExpense: null,  // Para armazenar o estado inicial do item em edição
+      isEditing: false       // Flag para identificar se está editando ou criando
     };
   },
   computed: {
@@ -217,6 +223,17 @@ export default {
              this.newExpense.date &&
              this.newExpense.quantity > 0 &&
              this.newExpense.unitCost > 0;
+    },
+    // Verificar se há alterações no formulário comparado ao estado inicial
+    hasChanges() {
+      if (!this.isEditing || !this.initialExpense) return true; // Se estiver criando, sempre pode salvar
+
+      // Comparar valores do formulário com o valor inicial
+      return this.newExpense.item !== this.initialExpense.item ||
+             this.newExpense.quantity !== this.initialExpense.quantity ||
+             this.newExpense.unitCost !== this.initialExpense.unitCost ||
+             this.newExpense.notes !== this.initialExpense.notes ||
+             this.newExpense.date !== this.initialExpense.date;
     }
   },
   methods: {
@@ -235,46 +252,70 @@ export default {
       this.isCalendarOpen = false;
     },
     async handleAddExpense() {
+      // Se estiver editando e não houver mudanças, apenas fecha o modal
+      if (this.isEditing && !this.hasChanges) {
+        this.isDialogOpen = false;
+        this.resetForm();
+        return;
+      }
+
       // Calcular custo total
       this.newExpense.totalCost = this.newExpense.quantity * this.newExpense.unitCost;
 
       try {
-        const despesa = {
-          ...this.newExpense,
-        };
+        const despesa = { ...this.newExpense };
 
-        await this.addDespesa(despesa);
+        if (this.isEditing && this.selectedExpense) {
+          // Atualização de despesa existente
+          await this.updateDespesa(this.selectedExpense.id, despesa);
+          toast.success("Despesa atualizada com sucesso");
+        } else {
+          // Nova despesa
+          await this.addDespesa(despesa);
+          toast.success("Despesa adicionada com sucesso");
+        }
 
-        // Resetar formulário
-        this.newExpense = {
-          date: this.formatDateForBackend(new Date()),
-          item: '',
-          quantity: 1,
-          unitCost: 0,
-          totalCost: 0,
-          notes: ''
-        };
-
+        // Importante: Primeiro fechar o modal, depois resetar o form
         this.isDialogOpen = false;
+        this.resetForm();
 
         // Emitir evento para informar o componente pai
         this.$emit('add-expense');
+        this.$emit('expense-updated');
       } catch (error) {
-        console.error('Erro ao adicionar despesa:', error);
+        console.error('Erro ao processar despesa:', error);
+        toast.error("Erro ao salvar despesa");
       }
+    },
+    resetForm() {
+      this.newExpense = {
+        date: this.formatDateForBackend(new Date()),
+        item: '',
+        quantity: 1,
+        unitCost: 0,
+        totalCost: 0,
+        notes: ''
+      };
+      this.selectedExpense = null;
+      this.initialExpense = null;
+      this.isEditing = false;
     },
     handleEditExpense(expense: Despesa) {
       this.selectedExpense = expense;
       this.newExpense = {...expense};
+      this.initialExpense = {...expense}; // Salvar estado inicial para comparação
+      this.isEditing = true;
       this.isDialogOpen = true;
     },
     async handleDeleteExpense(expense: Despesa) {
       if (confirm('Tem certeza que deseja excluir esta despesa?')) {
         try {
           await this.deleteDespesa(expense.id);
+          toast.success("Despesa excluída com sucesso");
           this.$emit('expense-deleted');
         } catch (error) {
           console.error('Erro ao excluir despesa:', error);
+          toast.error("Erro ao excluir despesa");
         }
       }
     }

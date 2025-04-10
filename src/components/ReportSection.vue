@@ -82,7 +82,7 @@
             <CardTitle class="text-sm font-medium text-gray-500">Total de Despesas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="text-2xl font-bold text-red-600">R$ {{ formatCurrency(report.totalExpenses) }}</div>
+            <div class="text-2xl font-bold text-red-600">R$ {{ formatCurrency(report.totalCosts) }}</div>
             <p class="text-xs text-gray-500 mt-1">{{ getReportPeriodText() }}</p>
           </CardContent>
         </Card>
@@ -92,8 +92,8 @@
             <CardTitle class="text-sm font-medium text-gray-500">Saldo</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="text-2xl font-bold" :class="report.balance >= 0 ? 'text-emerald-600' : 'text-red-600'">
-              R$ {{ formatCurrency(report.balance) }}
+            <div class="text-2xl font-bold" :class="getSaldoClass()">
+              R$ {{ formatCurrency(calculateBalance()) }}
             </div>
             <p class="text-xs text-gray-500 mt-1">Receitas - Despesas</p>
           </CardContent>
@@ -101,14 +101,14 @@
 
         <Card>
           <CardHeader class="pb-2">
-            <CardTitle class="text-sm font-medium text-gray-500">Transações</CardTitle>
+            <CardTitle class="text-sm font-medium text-gray-500">Lucro</CardTitle>
           </CardHeader>
           <CardContent>
             <div class="text-2xl font-bold text-indigo-600">
-              {{ report.incomeTransactions + report.expenseTransactions }}
+              R$ {{ formatCurrency(report.totalProfit) }}
             </div>
             <p class="text-xs text-gray-500 mt-1">
-              {{ report.incomeTransactions }} receitas, {{ report.expenseTransactions }} despesas
+              Lucro sobre vendas
             </p>
           </CardContent>
         </Card>
@@ -122,17 +122,21 @@
             <CardTitle>Receitas vs Despesas</CardTitle>
             <CardDescription>Comparativo entre receitas e despesas no período</CardDescription>
           </CardHeader>
-          <CardContent class="h-80">
-            <BarChart
-              v-if="comparisonChartData.length > 0"
-              :data="comparisonChartData"
-              index="category"
-              :categories="['value']"
-              :colors="['rgba(16, 185, 129, 0.7)', 'rgba(239, 68, 68, 0.7)']"
-              :y-formatter="(tick) => `R$ ${formatCurrency(Number(tick))}`"
-            />
-            <div v-else class="h-full flex items-center justify-center">
-              <p class="text-gray-500 text-sm">Não há dados suficientes para exibir o gráfico</p>
+          <CardContent class="h-80 relative">
+            <div class="h-full w-full">
+              <BarChart
+                v-if="comparisonChartData.length > 0"
+                :data="comparisonChartData"
+                :items="comparisonChartData"
+                index="category"
+                :categories="['value']"
+                :colors="['rgba(16, 185, 129, 0.7)', 'rgba(239, 68, 68, 0.7)']"
+                :y-formatter="(tick) => `R$ ${formatCurrency(Number(tick))}`"
+                class="h-full w-full"
+              />
+              <div v-else class="h-full flex items-center justify-center">
+                <p class="text-gray-500 text-sm">Não há dados suficientes para exibir o gráfico</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -141,23 +145,54 @@
         <Card>
           <CardHeader>
             <CardTitle>Distribuição por Categoria</CardTitle>
-            <CardDescription>{{ isTroteMode ? 'Categorias de vendas em eventos de trote' : 'Categorias de vendas regulares' }}</CardDescription>
+            <CardDescription>{{ isTroteMode ? 'Categorias de vendas em eventos de trote' : 'Categorias de vendas por produto' }}</CardDescription>
           </CardHeader>
-          <CardContent class="h-80">
-            <DonutChart
-              v-if="categoryChartData.length > 0"
-              :data="categoryChartData"
-              index="category"
-              :category-percs="true"
-            />
-            <div v-else class="h-full flex items-center justify-center">
-              <p class="text-gray-500 text-sm">Não há dados suficientes para exibir o gráfico</p>
+          <CardContent class="h-80 relative p-0">
+            <div class="h-full flex flex-col pt-0">
+              <!-- Legendas movidas para o topo -->
+              <div v-if="categoryChartData.length > 0" class="flex-none px-4 pt-2">
+                <div class="flex flex-wrap justify-center gap-2 mb-2">
+                  <div
+                    v-for="(item, index) in categoryChartData"
+                    :key="`legend-${index}`"
+                    class="flex items-center text-xs bg-gray-50 rounded-md px-2 py-1 border border-gray-100"
+                  >
+                    <div
+                      class="w-2 h-2 rounded-sm mr-1"
+                      :style="{ backgroundColor: getChartColor(index) }"
+                    ></div>
+                    <span class="font-medium">{{ item.name }}</span>
+                    <span class="text-gray-500 ml-1">
+                      ({{ formatCurrency(item.value) }}{{ item.value ? ` - ${((item.value / getTotalForCategory()) * 100).toFixed(1)}%` : '' }})
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Gráfico donut com labels simplificados -->
+              <div class="flex-grow px-5 py-5">
+                <DonutChart
+                  v-if="categoryChartData.length > 0"
+                  :data="categoryChartData"
+                  :items="categoryChartData"
+                  index="category"
+                  :categories="['value']"
+                  :category-percs="false"
+                  :formatter="(value: number) => `R$ ${formatCurrency(value)}`"
+                  class="h-full w-full"
+                  :legend="false"
+                  :show-labels="true"
+                />
+                <div v-else class="h-full flex items-center justify-center">
+                  <p class="text-gray-500 text-sm">Não há dados suficientes para exibir o gráfico</p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <!-- Detailed Transaction Tables -->
+      <!-- Detailed Transactions using FinancialItems -->
       <Tabs default-value="income" class="w-full">
         <TabsList>
           <TabsTrigger value="income" class="flex items-center gap-2">
@@ -171,77 +206,33 @@
         </TabsList>
 
         <TabsContent value="income">
-          <Card>
-            <CardContent class="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead class="text-right">Valor</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="transaction in filteredIncomeTransactions" :key="transaction.id">
-                    <TableCell>{{ formatDate(transaction.date) }}</TableCell>
-                    <TableCell>
-                      <div>
-                        {{ transaction.description }}
-                        <p v-if="transaction.notes" class="text-xs text-gray-500 mt-1">{{ transaction.notes }}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{{ transaction.category }}</Badge>
-                    </TableCell>
-                    <TableCell class="text-right font-medium text-emerald-600">R$ {{ formatCurrency(transaction.amount) }}</TableCell>
-                  </TableRow>
-                  <TableRow v-if="filteredIncomeTransactions.length === 0">
-                    <TableCell colspan="4" class="text-center py-4 text-gray-500">
-                      Nenhuma receita encontrada para este período
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <div v-if="incomeItems.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <FinancialItem
+              v-for="(item, index) in incomeItems"
+              :key="index"
+              :item="item"
+              type="sale"
+            />
+          </div>
+          <div v-else class="text-center py-12 bg-gray-50 rounded-lg">
+            <FileText class="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p class="text-gray-500">Nenhuma receita encontrada para este período</p>
+          </div>
         </TabsContent>
 
         <TabsContent value="expenses">
-          <Card>
-            <CardContent class="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead class="text-right">Valor</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="transaction in filteredExpenseTransactions" :key="transaction.id">
-                    <TableCell>{{ formatDate(transaction.date) }}</TableCell>
-                    <TableCell>
-                      <div>
-                        {{ transaction.description }}
-                        <p v-if="transaction.notes" class="text-xs text-gray-500 mt-1">{{ transaction.notes }}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{{ transaction.category }}</Badge>
-                    </TableCell>
-                    <TableCell class="text-right font-medium text-red-600">R$ {{ formatCurrency(transaction.amount) }}</TableCell>
-                  </TableRow>
-                  <TableRow v-if="filteredExpenseTransactions.length === 0">
-                    <TableCell colspan="4" class="text-center py-4 text-gray-500">
-                      Nenhuma despesa encontrada para este período
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <div v-if="expenseItems.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <FinancialItem
+              v-for="(item, index) in expenseItems"
+              :key="index"
+              :item="item"
+              type="expense"
+            />
+          </div>
+          <div v-else class="text-center py-12 bg-gray-50 rounded-lg">
+            <FileText class="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p class="text-gray-500">Nenhuma despesa encontrada para este período</p>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
@@ -266,12 +257,11 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Search, Calendar, CalendarClock, Loader2, AlertCircle,
-  TrendingUp, TrendingDown, FileBarChart
+  TrendingUp, TrendingDown, FileBarChart, FileText
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -279,39 +269,64 @@ import { BarChart } from '@/components/ui/chart-bar';
 import { DonutChart } from '@/components/ui/chart-donut';
 import { useReportStore } from '@/stores/report';
 import { toast } from 'vue-sonner';
+import FinancialItem from '@/components/FinancialItem.vue';
 
-interface Transaction {
-  id: number;
-  date: string;
-  description: string;
-  category: string;
-  amount: number;
-  notes?: string;
+interface IncomeSummary {
+  totalIncome: number;
+  copoSum: number;
+  copoPercentage: number;
+  garrafaSum: number;
+  garrafaPercentage: number;
+  picoleSum: number;
+  picolePercentage: number;
+}
+
+interface IncomeProfit {
+  totalIncome: number;
+  copoSum: number;
+  copoPercentage: number;
+  garrafaSum: number;
+  garrafaPercentage: number;
+  picoleSum: number;
+  picolePercentage: number;
+}
+
+interface TroteSummary {
+  cartelaSum: number;
+  cartelaPercentage: number;
+  correioSum: number;
+  correioPercentage: number;
+  cadeiaSum: number;
+  cadeiaPercentage: number;
+  outroSum: number;
+  outroPercentage: number;
+}
+
+interface CostItem {
+  item: string;
+  totalCost: number;
 }
 
 interface Report {
-  period: string;
-  trote: boolean;
   totalIncome: number;
-  totalExpenses: number;
-  balance: number;
-  incomeTransactions: number;
-  expenseTransactions: number;
-  incomeByCategory: Record<string, number>;
-  expensesByCategory: Record<string, number>;
-  transactions: Transaction[];
+  totalProfit: number;
+  totalCosts: number;
+  income: IncomeSummary;
+  profit: IncomeProfit;
+  incomeTrote: TroteSummary | null;
+  profitTrote: TroteSummary | null;
+  costs: CostItem[];
 }
 
 export default defineComponent({
   name: 'ReportSection',
   components: {
     Search, Calendar, CalendarClock, Loader2, AlertCircle,
-    TrendingUp, TrendingDown, FileBarChart,
+    TrendingUp, TrendingDown, FileBarChart, FileText,
     Button, Input, Card, CardContent, CardHeader, CardTitle, CardDescription,
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
     Tabs, TabsContent, TabsList, TabsTrigger, Badge,
     Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
-    BarChart, DonutChart
+    BarChart, DonutChart, FinancialItem
   },
   setup() {
     const reportStore = useReportStore();
@@ -319,14 +334,13 @@ export default defineComponent({
     const loading = ref(false);
     const error = ref<string | null>(null);
     const searchTerm = ref('');
-    const selectedPeriod = ref('monthly');
+    const selectedPeriod = ref('diario');
     const isTroteMode = ref(false);
 
     const periodOptions = [
-      { value: 'daily', label: 'Diário' },
-      { value: 'weekly', label: 'Semanal' },
-      { value: 'monthly', label: 'Mensal' },
-      { value: 'yearly', label: 'Anual' },
+      { value: 'diario', label: 'Diário' },
+      { value: 'semanal', label: 'Semanal' },
+      { value: 'mensal', label: 'Mensal' },
     ];
 
     const toggleTroteMode = () => {
@@ -339,7 +353,6 @@ export default defineComponent({
       error.value = null;
 
       try {
-        // Usar a store em vez de fazer a chamada diretamente
         const data = await reportStore.fetchReport(selectedPeriod.value, isTroteMode.value);
         report.value = data;
         toast.success("Relatório gerado com sucesso!");
@@ -347,7 +360,7 @@ export default defineComponent({
         console.error('Erro ao carregar relatório:', err);
         error.value = err.response?.data || 'Não foi possível carregar os dados do relatório. Por favor, tente novamente.';
         toast.error("Falha ao gerar relatório", {
-          description: error.value
+          description: `${error.value}`
         });
       } finally {
         loading.value = false;
@@ -355,11 +368,20 @@ export default defineComponent({
     };
 
     const formatDate = (dateStr: string) => {
-      const date = new Date(dateStr);
-      return format(date, 'dd/MM/yyyy', { locale: ptBR });
+      try {
+        const date = new Date(dateStr);
+        return format(date, 'dd/MM/yyyy', { locale: ptBR });
+      } catch (e) {
+        return 'Data inválida';
+      }
     };
 
-    const formatCurrency = (value: number) => {
+    // Versão segura do formatCurrency
+    const formatCurrency = (value: number | null | undefined) => {
+      // Se o valor for null, undefined ou NaN, retorna zero formatado
+      if (value === null || value === undefined || isNaN(value)) {
+        return '0,00';
+      }
       return value.toFixed(2).replace('.', ',');
     };
 
@@ -367,57 +389,205 @@ export default defineComponent({
       if (!report.value) return '';
 
       switch (selectedPeriod.value) {
-        case 'daily': return 'No dia';
-        case 'weekly': return 'Na semana';
-        case 'monthly': return 'No mês';
-        case 'yearly': return 'No ano';
+        case 'diario': return 'No dia';
+        case 'semanal': return 'Na semana';
+        case 'mensal': return 'No mês';
         default: return '';
       }
     };
 
-    const filteredTransactions = computed(() => {
-      if (!report.value) return [];
+    // Calcular o saldo (receitas - despesas)
+    const calculateBalance = () => {
+      if (!report.value) return 0;
+      return report.value.totalIncome - report.value.totalCosts;
+    };
 
-      return report.value.transactions.filter(transaction => {
-        const searchLower = searchTerm.value.toLowerCase();
-        return transaction.description.toLowerCase().includes(searchLower) ||
-               (transaction.notes && transaction.notes.toLowerCase().includes(searchLower)) ||
-               transaction.category.toLowerCase().includes(searchLower);
-      });
-    });
+    // Determinar a classe de cor para o saldo
+    const getSaldoClass = () => {
+      if (!report.value) return '';
+      const balance = calculateBalance();
+      return balance >= 0 ? 'text-emerald-600' : 'text-red-600';
+    };
 
-    const filteredIncomeTransactions = computed(() => {
-      return filteredTransactions.value.filter(t => t.amount > 0);
-    });
-
-    const filteredExpenseTransactions = computed(() => {
-      return filteredTransactions.value.filter(t => t.amount < 0);
-    });
-
+    // Dados para o gráfico de comparação com formato correto
     const comparisonChartData = computed(() => {
       if (!report.value) return [];
 
       return [
-        { category: 'Receitas', value: report.value.totalIncome },
-        { category: 'Despesas', value: Math.abs(report.value.totalExpenses) }
+        { category: 'Receitas', name: 'Receitas', value: report.value.totalIncome },
+        { category: 'Despesas', name: 'Despesas', value: Math.abs(report.value.totalCosts) }
       ];
     });
 
+    // Dados para o gráfico de categorias com formato correto para DonutChart
     const categoryChartData = computed(() => {
       if (!report.value) return [];
 
-      const categories = isTroteMode.value
-        ? Object.entries(report.value.incomeByCategory).map(([category, value]) => ({
-            category,
-            value
-          }))
-        : Object.entries(report.value.expensesByCategory).map(([category, value]) => ({
-            category,
-            value: Math.abs(value)
-          }));
+      if (isTroteMode.value && report.value.incomeTrote) {
+        // Lógica para eventos de trote
+        const troteSummary = report.value.incomeTrote;
 
-      return categories.filter(item => item.value > 0);
+        // Gerando dados para o gráfico de trote
+        return [
+          { category: 'Cartela Bingo', name: 'Cartela Bingo', value: troteSummary.cartelaSum || 0 },
+          { category: 'Correio Elegante', name: 'Correio Elegante', value: troteSummary.correioSum || 0 },
+          { category: 'Cadeia do Amor', name: 'Cadeia do Amor', value: troteSummary.cadeiaSum || 0 },
+          { category: 'Outros', name: 'Outros', value: troteSummary.outroSum || 0 }
+        ].filter(item => item.value > 0);
+      } else {
+        // Lógica para vendas regulares
+        const income = report.value.income;
+        if (!income) return [];
+
+        return [
+          { category: 'Refri (copo)', name: 'Refri (copo)', value: income.copoSum || 0 },
+          { category: 'Refri (garrafa)', name: 'Refri (garrafa)', value: income.garrafaSum || 0 },
+          { category: 'Picolé', name: 'Picolé', value: income.picoleSum || 0 }
+        ].filter(item => item.value > 0);
+      }
     });
+
+    // Transformar os dados de receitas para o formato do FinancialItem
+    const incomeItems = computed(() => {
+      if (!report.value) return [];
+
+      const currentDate = formatDate(new Date().toISOString());
+      const items = [];
+
+      if (isTroteMode.value && report.value.incomeTrote) {
+        // Items para trote
+        const troteSummary = report.value.incomeTrote;
+
+        // Cartela Bingo
+        if (troteSummary.cartelaSum > 0) {
+          items.push({
+            id: 'cartela',
+            date: currentDate,
+            itemType: 'CARTELA_BINGO',
+            quantity: Math.round(troteSummary.cartelaSum / 2.5), // Estimando quantidades
+            unitPrice: 2.5,
+            totalPrice: troteSummary.cartelaSum,
+            notes: 'Resumo do período (trote)'
+          });
+        }
+
+        // Correio Elegante
+        if (troteSummary.correioSum > 0) {
+          items.push({
+            id: 'correio',
+            date: currentDate,
+            itemType: 'CORREIO_ELEGANTE',
+            quantity: Math.round(troteSummary.correioSum / 1.5),
+            unitPrice: 1.5,
+            totalPrice: troteSummary.correioSum,
+            notes: 'Resumo do período (trote)'
+          });
+        }
+
+        // Cadeia do Amor
+        if (troteSummary.cadeiaSum > 0) {
+          items.push({
+            id: 'cadeia',
+            date: currentDate,
+            itemType: 'CADEIA_AMOR',
+            quantity: Math.round(troteSummary.cadeiaSum / 2),
+            unitPrice: 2,
+            totalPrice: troteSummary.cadeiaSum,
+            notes: 'Resumo do período (trote)'
+          });
+        }
+
+        // Outros itens de trote
+        if (troteSummary.outroSum > 0) {
+          items.push({
+            id: 'outros_trote',
+            date: currentDate,
+            itemType: 'OUTROS',
+            quantity: 1,
+            unitPrice: troteSummary.outroSum,
+            totalPrice: troteSummary.outroSum,
+            notes: 'Outros itens de trote'
+          });
+        }
+      } else {
+        // Items para vendas regulares
+        const income = report.value.income;
+        if (!income) return [];
+
+        // Refri copo
+        if (income.copoSum > 0) {
+          items.push({
+            id: 'copo',
+            date: currentDate,
+            itemType: 'REFRI_COPO',
+            quantity: Math.round(income.copoSum / 2.5), // Estimando quantidades com base no preço
+            unitPrice: 2.5,
+            totalPrice: income.copoSum,
+            notes: 'Resumo do período'
+          });
+        }
+
+        // Refri garrafa
+        if (income.garrafaSum > 0) {
+          items.push({
+            id: 'garrafa',
+            date: currentDate,
+            itemType: 'REFRI_GARRAFA',
+            quantity: Math.round(income.garrafaSum / 15),
+            unitPrice: 15,
+            totalPrice: income.garrafaSum,
+            notes: 'Resumo do período'
+          });
+        }
+
+        // Picolé
+        if (income.picoleSum > 0) {
+          items.push({
+            id: 'picole',
+            date: currentDate,
+            itemType: 'PICOLE',
+            quantity: Math.round(income.picoleSum / 4),
+            unitPrice: 4,
+            totalPrice: income.picoleSum,
+            notes: 'Resumo do período'
+          });
+        }
+      }
+
+      return items;
+    });
+
+    // Transformar os dados de despesas para o formato do FinancialItem
+    const expenseItems = computed(() => {
+      if (!report.value || !report.value.costs || !report.value.costs.length) return [];
+
+      // Data atual como referência
+      const currentDate = formatDate(new Date().toISOString());
+
+      return report.value.costs.map((cost, index) => ({
+        id: index,
+        date: currentDate,
+        item: cost.item,
+        quantity: 1, // Assumindo que cada item é uma unidade
+        unitCost: cost.totalCost,
+        totalCost: cost.totalCost,
+        notes: 'Resumo do período'
+      }));
+    });
+
+    // Cores para o gráfico
+    const chartColors = ['#3b82f6', '#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+    // Função para obter a cor para cada categoria
+    const getChartColor = (index: number) => {
+      return chartColors[index % chartColors.length];
+    };
+
+    // Função para calcular o total das categorias (para percentuais)
+    const getTotalForCategory = () => {
+      if (!categoryChartData.value || !categoryChartData.value.length) return 0;
+      return categoryChartData.value.reduce((sum, item) => sum + item.value, 0);
+    };
 
     return {
       report,
@@ -432,15 +602,92 @@ export default defineComponent({
       formatDate,
       formatCurrency,
       getReportPeriodText,
-      filteredIncomeTransactions,
-      filteredExpenseTransactions,
+      calculateBalance,
+      getSaldoClass,
       comparisonChartData,
-      categoryChartData
+      categoryChartData,
+      incomeItems,
+      expenseItems,
+      getChartColor,
+      getTotalForCategory
     };
   }
 });
 </script>
 
 <style scoped>
-/* Adicione estilos específicos aqui, se necessário */
+/* Ajustes para garantir que os gráficos fiquem contidos em seus containers */
+.h-80 {
+  height: 20rem;
+  position: relative;
+}
+
+/* Estilo para melhorar a exibição e posicionamento dos gráficos */
+:deep(.recharts-responsive-container) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+:deep(.recharts-wrapper) {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* Melhorar a exibição das legendas */
+:deep(.recharts-default-legend) {
+  margin-top: 10px !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+:deep(.recharts-legend-item) {
+  margin: 0 8px !important;
+}
+
+:deep(.recharts-legend-item-text) {
+  font-size: 0.875rem !important;
+  color: #374151 !important;
+}
+
+/* Ajustar o tamanho e a cor dos rótulos dos eixos */
+:deep(.recharts-cartesian-axis-tick-value) {
+  font-size: 0.75rem !important;
+  fill: #6B7280 !important;
+}
+
+/* Garantir que as barras tenham cores distintas */
+:deep(.recharts-bar-rectangle:nth-child(1)) path {
+  fill: rgba(16, 185, 129, 0.7) !important;
+}
+
+:deep(.recharts-bar-rectangle:nth-child(2)) path {
+  fill: rgba(239, 68, 68, 0.7) !important;
+}
+
+/* Adicionar um pequeno padding interno nos gráficos */
+:deep(.recharts-surface) {
+  overflow: visible;
+}
+
+/* Estilos específicos para o gráfico Donut */
+:deep(.donut-chart-container) {
+  margin-top: -20px !important;
+  transform: scale(0.85);
+}
+
+/* Reduzir o tamanho do SVG para dar mais espaço e centralizar melhor */
+:deep(svg) {
+  max-height: 220px !important;
+}
+
+:deep(.recharts-pie-label-text) {
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+:deep(.recharts-sector) {
+  stroke: white;
+  stroke-width: 1;
+}
 </style>

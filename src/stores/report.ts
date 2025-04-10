@@ -32,11 +32,6 @@ export const useReportStore = defineStore('report', {
         // Verificar se é erro de autenticação e mostrar mensagem específica
         if (err.response?.status === 401) {
           this.error = 'Sua sessão expirou ou você não está autenticado. Faça login novamente.';
-
-          // Redirecionar para login após erro de autenticação
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 2000);
         } else {
           this.error = err.response?.data || 'Falha ao carregar o relatório. Por favor, tente novamente.';
         }

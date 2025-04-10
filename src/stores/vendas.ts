@@ -3,7 +3,7 @@ import Venda from "@/types/Venda";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-export const useVendaStore = defineStore("venda", () => {
+export default defineStore("venda", () => {
   const vendas = ref<Venda[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);

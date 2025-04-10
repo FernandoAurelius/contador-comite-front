@@ -1,6 +1,6 @@
 <template>
   <div class="container mx-auto px-4 py-4 sm:py-8 max-w-6xl">
-    <Dashboard />
+    <Dashboard ref="dashboard" />
 
     <Tabs default-value="calendar" class="mt-6 sm:mt-8">
       <TabsList class="grid w-full grid-cols-2">
@@ -61,7 +61,12 @@
       </TabsContent>
 
       <TabsContent value="expenses" class="mt-4">
-        <ExpensesSection :expenses="despesas" @add-expense="handleAddExpense" />
+        <ExpensesSection
+          :expenses="despesas"
+          @add-expense="handleAddExpense"
+          @expense-updated="refreshDashboard"
+          @expense-deleted="refreshDashboard"
+        />
       </TabsContent>
     </Tabs>
 
@@ -96,7 +101,7 @@ import InitialCapitalModal from '@/components/InitialCapitalModal.vue';
 import ExpensesSection from '@/components/ExpensesSection.vue';
 import GoalsSection from '@/components/GoalsSection.vue';
 import { useCapitalStore } from '@/stores/capital';
-import { useVendaStore } from '@/stores/vendas';
+import useVendaStore from '@/stores/vendas';
 import { useMediaQuery } from '@/composables/useMediaQuery';
 import { mapActions, mapState } from 'pinia';
 import { useDespesaStore } from '@/stores/despesas';
@@ -176,6 +181,7 @@ export default defineComponent({
       const store = useDespesaStore();
       try {
         await store.addDespesa(expense);
+        this.refreshDashboard();
       } catch (error) {
         console.error("Erro ao adicionar despesa", error);
       }
@@ -195,6 +201,18 @@ export default defineComponent({
     handleCloseInitialCapitalModal() {
       const capitalStore = useCapitalStore();
       capitalStore.getCapital();
+    },
+    refreshDashboard() {
+      const capitalStore = useCapitalStore();
+      const despesaStore = useDespesaStore();
+      const metaStore = useMetaStore();
+
+      // Recarregar todos os dados necessários
+      Promise.all([
+        capitalStore.getCapital(),
+        despesaStore.getDespesas(),
+        metaStore.getMeta()
+      ]);
     },
     addDays: addDays
   },

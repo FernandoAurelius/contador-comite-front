@@ -18,7 +18,7 @@
                 <p
                   class="text-sm bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-300 dark:to-teal-400 text-transparent mb-2 font-bold">
                   Capital Atual</p>
-                <p class="text-2xl font-bold">R$ {{ capital.currentAmount?.toFixed(2) }}</p>
+                <p class="text-2xl font-bold">R$ {{ formatCurrency(capital?.currentAmount) }}</p>
               </div>
               <div class="h-12 w-12 ml-5 rounded-full bg-emerald-100 flex items-center justify-center">
                 <DollarSign class="h-6 w-6 text-emerald-600" />
@@ -35,7 +35,7 @@
                 <p
                   class="text-sm bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-300 dark:to-teal-400 text-transparent mb-2 font-bold">
                   Total Arrecadado</p>
-                <p class="text-2xl font-bold">R$ {{ capital.totalAmount?.toFixed(2) }}</p>
+                <p class="text-2xl font-bold">R$ {{ formatCurrency(capital?.totalAmount) }}</p>
               </div>
               <div class="h-12 w-12 ml-5 rounded-full bg-emerald-100 flex items-center justify-center">
                 <ArrowUp class="h-6 w-6 text-green-600" />
@@ -52,7 +52,7 @@
                 <p
                   class="text-sm bg-clip-text bg-gradient-to-r from-rose-600 to-red-700 text-transparent dark:from-rose-300 dark:to-red-400 mb-2 font-bold">
                   Total gasto</p>
-                <p class="text-2xl font-bold">R$ {{ totalSpent.toFixed(2) }}</p>
+                <p class="text-2xl font-bold">R$ {{ formatCurrency(totalSpent) }}</p>
               </div>
               <div class="h-12 w-12 ml-5 rounded-full bg-red-100 flex items-center justify-center">
                 <ArrowDown class="h-6 w-6 text-red-600" />
@@ -76,13 +76,13 @@
 
             <div class="flex justify-between text-sm">
               <div>
-                <span class="text-gray-500">Meta:</span> R$ {{ meta.goalValue?.toFixed(2) }}
+                <span class="text-gray-500">Meta:</span> R$ {{ formatCurrency(meta?.goalValue) }}
               </div>
               <div>
-                <span class="text-gray-500">Falta:</span> R$ {{ remainingToGoal.toFixed(2) }}
+                <span class="text-gray-500">Falta:</span> R$ {{ formatCurrency(remainingToGoal) }}
               </div>
               <div>
-                <span class="text-gray-500">Progresso:</span> {{ progressPercentage.toFixed(2) }}%
+                <span class="text-gray-500">Progresso:</span> {{ formatPercentage(progressPercentage) }}%
               </div>
             </div>
           </CardContent>
@@ -96,26 +96,41 @@
 import { ArrowDown, ArrowUp, DollarSign, Target } from 'lucide-vue-next';
 import { Card, CardContent } from './ui/card';
 import { Progress } from './ui/progress';
-import { defineComponent, Transition } from 'vue';
+import { defineComponent, Transition, computed, watch } from 'vue';
 import { useCapitalStore } from '@/stores/capital';
-import Despesa from '@/types/Despesa';
 import { useDespesaStore } from '@/stores/despesas';
 import { useMetaStore } from '@/stores/meta';
 import { mapState } from 'pinia';
 
 export default defineComponent({
   name: "Dashboard",
-  data() {
-    return {
-      totalSpent: 0 as number,
-      progressPercentage: 0 as number,
-      remainingToGoal: 0 as number,
-    }
+  components: {
+    Card,
+    CardContent,
+    Progress,
+    ArrowDown,
+    ArrowUp,
+    DollarSign,
+    Target,
+    Transition
   },
   computed: {
     ...mapState(useCapitalStore, ['capital']),
     ...mapState(useDespesaStore, ['despesas']),
-    ...mapState(useMetaStore, ['meta'])
+    ...mapState(useMetaStore, ['meta']),
+
+    // Computed properties para reatividade automática
+    totalSpent() {
+      return this.despesas.reduce((accumulator, d) => accumulator + d.totalCost, 0);
+    },
+    progressPercentage() {
+      if (!this.meta?.goalValue || !this.meta?.currentValue) return 0;
+      return (this.meta.currentValue / this.meta.goalValue) * 100;
+    },
+    remainingToGoal() {
+      if (!this.meta?.goalValue || !this.meta?.currentValue) return 0;
+      return this.meta.goalValue - this.meta.currentValue;
+    }
   },
   methods: {
     beforeEnter(el: Element) {
@@ -133,14 +148,12 @@ export default defineComponent({
 
       el.addEventListener("transitionend", done);
     },
-    getTotalSpent() {
-      return this.despesas.reduce((accumulator: number, d: Despesa) => accumulator + d.totalCost, 0);
+    formatCurrency(value?: number): string {
+      if (value === undefined || value === null) return "0,00";
+      return value.toFixed(2).replace('.', ',');
     },
-    getProgressPercentage() {
-      return (this.meta.currentValue / this.meta.goalValue) * 100;
-    },
-    getRemainingToGoal() {
-      return this.meta.goalValue - this.meta.currentValue;
+    formatPercentage(value: number): string {
+      return value.toFixed(2);
     }
   },
   async created() {
@@ -149,25 +162,24 @@ export default defineComponent({
     const metaStore = useMetaStore();
 
     try {
-      await capitalStore.getCapital();
-      await despesaStore.getDespesas();
-      await metaStore.getMeta();
-      this.totalSpent = this.getTotalSpent();
-      this.progressPercentage = this.getProgressPercentage();
-      this.remainingToGoal = this.getRemainingToGoal();
+      await Promise.all([
+        capitalStore.getCapital(),
+        despesaStore.getDespesas(),
+        metaStore.getMeta()
+      ]);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
   },
-  components: {
-    Card,
-    CardContent,
-    Progress,
-    ArrowDown,
-    ArrowUp,
-    DollarSign,
-    Target,
-    Transition
-  },
+  // Watchers para atualização automática
+  watch: {
+    'despesas': {
+      handler() {
+        // Os valores computados serão recalculados automaticamente
+        console.log('Despesas atualizadas, recalculando valores...');
+      },
+      deep: true
+    }
+  }
 });
 </script>

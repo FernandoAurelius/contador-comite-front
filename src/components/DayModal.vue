@@ -143,8 +143,8 @@
                     <PieChart class="h-5 w-5 text-gray-500" />
                   </div>
 
-                  <div class="h-[35vh] sm:h-[40vh] mx-auto">
-                    <div v-if="totalSales > 0">
+                  <div class="h-[30vh] sm:h-[35vh] mx-auto overflow-hidden">
+                    <div v-if="totalSales > 0" class="h-full w-full">
                       <BarChart
                         index="id"
                         :data="chartData"
@@ -152,6 +152,7 @@
                         :y-formatter="(tick) => `R$ ${typeof tick === 'number' ? tick.toFixed(2) : ''}`"
                         :colors="['rgba(75, 192, 192, 0.6)']"
                         :rounded-corners="4"
+                        class="h-full max-h-full"
                       />
                     </div>
                     <div v-else class="h-full flex items-center justify-center text-center">
@@ -187,10 +188,10 @@
               </Button>
               <Button
                 @click="handleSave"
-                :disabled="totalSales <= 0"
+                :disabled="totalSales <= 0 || !hasChanges"
                 class="w-full sm:w-auto"
               >
-                Salvar
+                {{ hasChanges ? 'Salvar' : 'Fechar' }}
               </Button>
             </div>
           </div>
@@ -202,7 +203,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType, ref, computed, watch } from 'vue';
-import { format } from 'date-fns';
+import { format, addDays, subDays, startOfWeek, addWeeks, subWeeks, isAfter, isBefore, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { X, Coffee, Droplet, IceCream, Ticket, Heart, Mail, Plus, PieChart } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
@@ -215,6 +216,7 @@ import { BarChart } from '@/components/ui/chart-bar';
 import vendaService from '@/api/vendaService';
 import { useTroteStore } from '@/stores/trote';
 import { storeToRefs } from 'pinia';
+import { toast } from 'vue-sonner';
 
 interface SaleItem {
   id: string;
@@ -225,17 +227,30 @@ interface SaleItem {
   isTroteItem?: boolean;
 }
 
-// Mapeamento de IDs para ItemType do backend
+interface LoadedVenda {
+  id: number;
+  itemType: string;
+  quantity: number;
+}
+
 const ITEM_TYPE_MAPPING = {
   'soda-cup': 'REFRI_COPO',
   'soda-bottle': 'REFRI_GARRAFA',
   'popsicle': 'PICOLE',
   'bingo': 'CARTELA_BINGO',
-  'love-chain': 'OUTROS',
+  'love-chain': 'CADEIA_DO_AMOR',
   'elegant-mail': 'CORREIO_ELEGANTE'
 };
 
-// Product prices
+const ITEM_ID_MAPPING = {
+  'REFRI_COPO': 'soda-cup',
+  'REFRI_GARRAFA': 'soda-bottle',
+  'PICOLE': 'popsicle',
+  'CARTELA_BINGO': 'bingo',
+  'CADEIA_DO_AMOR': 'love-chain',
+  'CORREIO_ELEGANTE': 'elegant-mail'
+};
+
 const PRICES = {
   "soda-cup": 2.5,
   "soda-bottle": 15,
@@ -270,19 +285,27 @@ export default defineComponent({
     const customItemPrice = ref('');
     const loading = ref(false);
 
-    // Inicializar isTroteDay com valor do store
-    watch(() => props.date, () => {
-      if (props.date) {
-        const day = props.date.getDate().toString().padStart(2, '0');
-        const month = (props.date.getMonth() + 1).toString().padStart(2, '0');
-        const year = props.date.getFullYear();
-        const dateStr = `${day}-${month}-${year}`;
+    const loadedVendas = ref<{ [key: string]: LoadedVenda[] }>({});
+    const loadedCustomVendas = ref<{ [key: string]: LoadedVenda[] }>({});
 
-        isTroteDay.value = troteStore.isTroteDay(dateStr);
-      }
-    }, { immediate: true });
+    const initialItemValues = ref<{[key: string]: number}>({});
+    const initialCustomItems = ref<SaleItem[]>([]);
+    const hasChanges = computed(() => {
+      const standardItemsChanged = items.value.some(item => {
+        return item.count !== (initialItemValues.value[item.id] || 0);
+      });
 
-    // Initial sales items
+      const customItemsChanged = customItems.value.length !== initialCustomItems.value.length ||
+        customItems.value.some((item, idx) => {
+          if (idx >= initialCustomItems.value.length) return true;
+          return item.count !== initialCustomItems.value[idx].count ||
+                 item.name !== initialCustomItems.value[idx].name ||
+                 item.price !== initialCustomItems.value[idx].price;
+        });
+
+      return standardItemsChanged || customItemsChanged;
+    });
+
     const items = ref<SaleItem[]>([
       {
         id: "soda-cup",
@@ -333,14 +356,12 @@ export default defineComponent({
 
     const customItems = ref<SaleItem[]>([]);
 
-    // Calculate total sales
     const totalSales = computed(() => {
       return [...items.value, ...customItems.value].reduce((total, item) => {
         return total + item.count * item.price;
       }, 0);
     });
 
-    // Prepare chart data for shadcn-vue BarChart
     const chartData = computed(() => {
       return [...items.value, ...customItems.value]
         .filter(item => item.count > 0)
@@ -363,7 +384,7 @@ export default defineComponent({
       const day = date.getDate().toString().padStart(2, '0');
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();
-      return `${day}-${month}-${year}`;
+      return `${year}-${month}-${day}`;
     };
 
     const formatDateForBackend = (date: Date): string => {
@@ -382,7 +403,25 @@ export default defineComponent({
       });
     };
 
-    const handleDecrement = (id: string) => {
+    const handleDecrement = async (id: string) => {
+      const item = items.value.find(item => item.id === id);
+      if (!item || item.count <= 0) return;
+
+      const itemType = ITEM_TYPE_MAPPING[id];
+
+      if (loadedVendas.value[itemType] && loadedVendas.value[itemType].length > 0) {
+        const vendaToDelete = loadedVendas.value[itemType].pop();
+        if (vendaToDelete) {
+          try {
+            await vendaService.deleteVenda(vendaToDelete.id);
+          } catch (error) {
+            console.error(`Erro ao excluir venda ${vendaToDelete.id}:`, error);
+            toast.error("Erro ao excluir venda");
+            return;
+          }
+        }
+      }
+
       items.value = items.value.map(item => {
         if (item.id === id && item.count > 0) {
           return { ...item, count: item.count - 1 };
@@ -400,7 +439,25 @@ export default defineComponent({
       });
     };
 
-    const handleDecrementCustom = (id: string) => {
+    const handleDecrementCustom = async (id: string) => {
+      const item = customItems.value.find(item => item.id === id);
+      if (!item || item.count <= 0) return;
+
+      const itemName = item.name;
+
+      if (loadedCustomVendas.value[itemName] && loadedCustomVendas.value[itemName].length > 0) {
+        const vendaToDelete = loadedCustomVendas.value[itemName].pop();
+        if (vendaToDelete) {
+          try {
+            await vendaService.deleteVenda(vendaToDelete.id);
+          } catch (error) {
+            console.error(`Erro ao excluir venda customizada ${vendaToDelete.id}:`, error);
+            toast.error("Erro ao excluir venda");
+            return;
+          }
+        }
+      }
+
       customItems.value = customItems.value.map(item => {
         if (item.id === id && item.count > 0) {
           return { ...item, count: item.count - 1 };
@@ -413,7 +470,7 @@ export default defineComponent({
       if (customItemName.value.trim() && Number.parseFloat(customItemPrice.value) > 0) {
         const newItem: SaleItem = {
           id: `custom-${Date.now()}`,
-          name: customItemName.value,
+          name: customItemName.value.trim(),
           icon: Plus,
           count: 0,
           price: Number.parseFloat(customItemPrice.value),
@@ -424,98 +481,228 @@ export default defineComponent({
       }
     };
 
+    const loadDayVendas = async () => {
+      if (!props.date) return;
+
+      loading.value = true;
+      try {
+        const dateStr = formatDateStr(props.date);
+        const dayVendas = await vendaService.getVendaByDate(dateStr);
+
+        items.value = items.value.map(item => ({...item, count: 0}));
+        customItems.value = [];
+        loadedVendas.value = {};
+        loadedCustomVendas.value = {};
+
+        if (dayVendas && dayVendas.length > 0) {
+          const isTroteVendas = dayVendas.some(v =>
+            v.itemType === 'CARTELA_BINGO' ||
+            v.itemType === 'CORREIO_ELEGANTE' ||
+            v.itemType === 'CADEIA_DO_AMOR' ||
+            (v.notes && v.notes.toLowerCase().includes('trote'))
+          );
+
+          if (isTroteVendas) {
+            isTroteDay.value = true;
+          }
+
+          dayVendas.forEach(venda => {
+            if (venda.itemType === 'OUTROS') {
+              const itemName = venda.notes || 'Item sem nome';
+
+              if (!loadedCustomVendas.value[itemName]) {
+                loadedCustomVendas.value[itemName] = [];
+              }
+
+              loadedCustomVendas.value[itemName].push({
+                id: venda.id,
+                itemType: venda.itemType,
+                quantity: venda.quantity
+              });
+
+              const existingItem = customItems.value.find(item => item.name === itemName);
+              if (existingItem) {
+                existingItem.count += venda.quantity;
+              } else {
+                customItems.value.push({
+                  id: `custom-${Date.now()}-${customItems.value.length}`,
+                  name: itemName,
+                  icon: Plus,
+                  count: venda.quantity,
+                  price: venda.unitPrice || 0
+                });
+              }
+            } else {
+              if (!loadedVendas.value[venda.itemType]) {
+                loadedVendas.value[venda.itemType] = [];
+              }
+
+              loadedVendas.value[venda.itemType].push({
+                id: venda.id,
+                itemType: venda.itemType,
+                quantity: venda.quantity
+              });
+
+              const itemId = ITEM_ID_MAPPING[venda.itemType];
+              if (itemId) {
+                const item = items.value.find(item => item.id === itemId);
+                if (item) {
+                  item.count += venda.quantity;
+                  item.price = venda.unitPrice || item.price;
+                }
+              }
+            }
+          });
+
+          initialItemValues.value = Object.fromEntries(
+            items.value.map(item => [item.id, item.count])
+          );
+          initialCustomItems.value = JSON.parse(JSON.stringify(customItems.value));
+        } else {
+          initialItemValues.value = Object.fromEntries(
+            items.value.map(item => [item.id, 0])
+          );
+          initialCustomItems.value = [];
+        }
+      } catch (error) {
+        console.error('Erro ao carregar vendas do dia:', error);
+        toast.error("Erro ao carregar vendas");
+      } finally {
+        loading.value = false;
+      }
+    };
+
     const handleSave = async () => {
+      if (!hasChanges.value) {
+        console.log('Nenhuma alteração detectada, pulando salvamento');
+        emit('update:is-open', false);
+        return;
+      }
+
       loading.value = true;
 
       try {
-        // Se for dia de trote, salva no store global
         if (isTroteDay.value) {
           const dateStr = formatDateStr(props.date);
           troteStore.setTroteDay(dateStr);
         }
 
-        // Preparar e enviar todos os itens com quantidade > 0
         const vendaPromises = [];
         const savedItems = [];
 
-        // Processar itens padrão
         for (const item of items.value) {
           if (item.count > 0) {
-            const venda = {
-              date: formatDateForBackend(props.date),
-              itemType: ITEM_TYPE_MAPPING[item.id] || 'OUTROS',
-              quantity: item.count,
-              unitPrice: item.price,
-              totalPrice: item.count * item.price,
-              notes: isTroteDay.value ? 'Dia de Trote' : ''
-            };
+            const itemType = ITEM_TYPE_MAPPING[item.id];
+            const loadedCount = (loadedVendas.value[itemType] || []).reduce(
+              (sum, v) => sum + v.quantity, 0
+            );
 
-            try {
-              const savedVenda = await vendaService.addVenda(venda);
-              savedItems.push({
-                id: item.id,
-                name: item.name,
-                count: item.count,
-                price: item.price,
-                total: item.count * item.price
-              });
+            if (item.count > loadedCount) {
+              const newCount = item.count - loadedCount;
+              const venda = {
+                date: formatDateForBackend(props.date),
+                itemType: itemType,
+                quantity: newCount,
+                unitPrice: item.price,
+                totalPrice: newCount * item.price,
+                notes: isTroteDay.value ? 'Dia de Trote' : ''
+              };
 
-              vendaPromises.push(Promise.resolve(savedVenda));
-            } catch (error) {
-              console.error(`Erro ao salvar item ${item.id}:`, error);
-              vendaPromises.push(Promise.reject(error));
+              try {
+                const savedVenda = await vendaService.addVenda(venda);
+                savedItems.push({
+                  id: item.id,
+                  name: item.name,
+                  count: newCount,
+                  price: item.price,
+                  total: newCount * item.price
+                });
+
+                vendaPromises.push(Promise.resolve(savedVenda));
+              } catch (error) {
+                console.error(`Erro ao salvar item ${item.id}:`, error);
+                vendaPromises.push(Promise.reject(error));
+              }
             }
           }
         }
 
-        // Processar itens customizados
         for (const item of customItems.value) {
           if (item.count > 0) {
-            const venda = {
-              date: formatDateForBackend(props.date),
-              itemType: 'OUTROS',
-              quantity: item.count,
-              unitPrice: item.price,
-              totalPrice: item.count * item.price,
-              notes: `${item.name}${isTroteDay.value ? ' - Dia de Trote' : ''}`
-            };
+            const loadedCount = (loadedCustomVendas.value[item.name] || []).reduce(
+              (sum, v) => sum + v.quantity, 0
+            );
 
-            try {
-              const savedVenda = await vendaService.addVenda(venda);
-              savedItems.push({
-                id: item.id,
-                name: item.name,
-                count: item.count,
-                price: item.price,
-                total: item.count * item.price
-              });
+            if (item.count > loadedCount) {
+              const newCount = item.count - loadedCount;
+              const venda = {
+                date: formatDateForBackend(props.date),
+                itemType: 'OUTROS',
+                quantity: newCount,
+                unitPrice: item.price,
+                totalPrice: newCount * item.price,
+                notes: `${item.name}${isTroteDay.value ? ' - Dia de Trote' : ''}`
+              };
 
-              vendaPromises.push(Promise.resolve(savedVenda));
-            } catch (error) {
-              console.error(`Erro ao salvar item personalizado ${item.id}:`, error);
-              vendaPromises.push(Promise.reject(error));
+              try {
+                const savedVenda = await vendaService.addVenda(venda);
+                savedItems.push({
+                  id: item.id,
+                  name: item.name,
+                  count: newCount,
+                  price: item.price,
+                  total: newCount * item.price
+                });
+
+                vendaPromises.push(Promise.resolve(savedVenda));
+              } catch (error) {
+                console.error(`Erro ao salvar item personalizado ${item.id}:`, error);
+                vendaPromises.push(Promise.reject(error));
+              }
             }
           }
         }
 
         await Promise.all(vendaPromises);
 
-        // Criar o objeto de venda completo para emitir
         const saleData = {
           date: formatDateForBackend(props.date),
           isTroteDay: isTroteDay.value,
           items: savedItems,
-          totalAmount: totalSales.value // Certifique-se de que este valor é acessível
+          totalAmount: totalSales.value
         };
+
+        initialItemValues.value = Object.fromEntries(
+          items.value.map(item => [item.id, item.count])
+        );
+        initialCustomItems.value = JSON.parse(JSON.stringify(customItems.value));
 
         emit('save', saleData);
         emit('update:is-open', false);
       } catch (error) {
         console.error('Erro ao salvar vendas:', error);
+        toast.error("Erro ao salvar vendas");
       } finally {
         loading.value = false;
       }
     };
+
+    watch(() => [props.isOpen, props.date], () => {
+      if (props.isOpen && props.date) {
+        loadDayVendas();
+      }
+    }, { immediate: true });
+
+    watch(() => props.date, () => {
+      if (props.date) {
+        const day = props.date.getDate().toString().padStart(2, '0');
+        const month = (props.date.getMonth() + 1).toString().padStart(2, '0');
+        const year = props.date.getFullYear();
+        const dateStr = `${day}-${month}-${year}`;
+
+        isTroteDay.value = troteStore.isTroteDay(dateStr);
+      }
+    }, { immediate: true });
 
     const onClose = () => {
       emit('update:is-open', false);
@@ -538,7 +725,9 @@ export default defineComponent({
       handleDecrementCustom,
       handleAddCustomItem,
       handleSave,
-      onClose
+      loadDayVendas,
+      onClose,
+      hasChanges
     };
   }
 });
@@ -575,5 +764,19 @@ export default defineComponent({
   .modal-fade-leave-active .bg-white {
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
+}
+
+/* Ajustar o overflow e dimensionamento dos gráficos */
+:deep(.recharts-responsive-container) {
+  overflow: visible !important;
+}
+
+:deep(.recharts-wrapper) {
+  max-height: 100% !important;
+  overflow: visible !important;
+}
+
+:deep(.recharts-surface) {
+  overflow: visible !important;
 }
 </style>

@@ -9,7 +9,9 @@ export default {
     return (await api.get(`/vendas/${date}`)).data;
   },
   async addVenda(venda: Venda) {
-    return (await api.post("/vendas", venda)).data;
+    // Remover o ID ao criar uma nova venda
+    const { id, ...vendaWithoutId } = venda as any;
+    return (await api.post("/vendas", vendaWithoutId)).data;
   },
   async updateVenda(id: number, venda: Venda) {
     return (await api.put(`/vendas/${id}`, venda)).data;
