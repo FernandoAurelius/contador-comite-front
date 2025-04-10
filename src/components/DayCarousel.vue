@@ -78,7 +78,7 @@ export default defineComponent({
   components: {
     ChevronLeft,
     ChevronRight,
-    Calendar: CalendarIcon,
+    CalendarIcon,
     Button,
     DayCard,
     Popover,
