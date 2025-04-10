@@ -89,6 +89,7 @@ import { defineComponent, ref, computed, onMounted, watch } from 'vue';
 import { format, addDays, subDays, startOfWeek, addWeeks, subWeeks, isAfter, isBefore, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Calendar } from 'lucide-vue-next';
+import type { DateValue } from '@/components/ui/calendar';
 
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -152,9 +153,10 @@ export default defineComponent({
     formatDate(date: Date, formatStr: string) {
       return format(date, formatStr, { locale: ptBR });
     },
-    selectWeek(date: Date) {
-      this.currentWeek = date;
-      const newWeekStart = startOfWeek(date, { weekStartsOn: 1 }); // Segunda como início
+    selectWeek(date: DateValue) {
+      const jsDate = new Date(date.year, date.month - 1, date.day);
+      this.currentWeek = jsDate;
+      const newWeekStart = startOfWeek(jsDate, { weekStartsOn: 1 }); // Segunda como início
     },
     handlePreviousWeek() {
       this.currentWeek = subWeeks(this.currentWeek, 1);

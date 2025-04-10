@@ -162,7 +162,8 @@ export default {
 
       return typeMap[itemType] || 'Venda';
     },
-    getTypeBadgeVariant(): string {
+    getTypeBadgeVariant(): "default" | "destructive" | "outline" | "secondary" {
+      // Usar apenas variantes válidos do Badge
       return this.type === 'expense' ? 'destructive' : 'default';
     },
     getTypeColorClass(): string {

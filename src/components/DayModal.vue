@@ -1,18 +1,12 @@
 <template>
   <Teleport to="body">
     <Transition name="modal-fade">
-      <div
-        v-if="isOpen"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center p-0 sm:p-4 z-50"
-        @click="onClose"
-      >
-        <div
-          class="bg-white rounded-t-xl sm:rounded-xl shadow-xl w-full h-[90vh] sm:h-auto sm:max-w-md
+      <div v-if="isOpen" class="fixed inset-0 bg-black/50 flex items-center justify-center p-0 sm:p-4 z-50"
+        @click="onClose">
+        <div class="bg-white rounded-t-xl sm:rounded-xl shadow-xl w-full h-[90vh] sm:h-auto sm:max-w-md
                  overflow-hidden max-h-[90vh] sm:max-h-[85vh] overflow-y-auto absolute bottom-0 sm:relative"
           :class="{ 'scale-100': isOpen, 'translate-y-0': isOpen }"
-          style="transition: transform 0.3s ease, opacity 0.3s ease;"
-          @click.stop
-        >
+          style="transition: transform 0.3s ease, opacity 0.3s ease;" @click.stop>
           <!-- Puxador móvel no topo para UX de sheet em mobile -->
           <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-2 mb-1 sm:hidden"></div>
 
@@ -39,12 +33,8 @@
               <TabsContent value="items" class="space-y-4 pt-2">
                 <h3 class="font-medium text-gray-700">Itens Vendidos</h3>
 
-                <div
-                  v-for="item in items"
-                  :key="item.id"
-                  class="flex items-center justify-between py-2"
-                  :class="{ 'hidden': item.isTroteItem && !isTroteDay }"
-                >
+                <div v-for="item in items" :key="item.id" class="flex items-center justify-between py-2"
+                  :class="{ 'hidden': item.isTroteItem && !isTroteDay }">
                   <div class="flex items-center gap-2">
                     <component :is="item.icon" class="h-4 w-4" />
                     <div>
@@ -53,17 +43,13 @@
                     </div>
                   </div>
                   <div class="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      class="h-10 w-10 sm:h-8 sm:w-8"
-                      @click="handleDecrement(item.id)"
-                      :disabled="item.count === 0"
-                    >
+                    <Button variant="outline" size="icon" class="h-10 w-10 sm:h-8 sm:w-8"
+                      @click="handleDecrement(item.id)" :disabled="item.count === 0">
                       <span>-</span>
                     </Button>
                     <span class="w-8 text-center">{{ item.count }}</span>
-                    <Button variant="outline" size="icon" class="h-10 w-10 sm:h-8 sm:w-8" @click="handleIncrement(item.id)">
+                    <Button variant="outline" size="icon" class="h-10 w-10 sm:h-8 sm:w-8"
+                      @click="handleIncrement(item.id)">
                       <span>+</span>
                     </Button>
                   </div>
@@ -73,11 +59,7 @@
                   <Separator class="my-4" />
                   <h3 class="font-medium text-gray-700">Outros Itens</h3>
 
-                  <div
-                    v-for="item in customItems"
-                    :key="item.id"
-                    class="flex items-center justify-between py-2"
-                  >
+                  <div v-for="item in customItems" :key="item.id" class="flex items-center justify-between py-2">
                     <div class="flex items-center gap-2">
                       <component :is="item.icon" class="h-4 w-4" />
                       <div>
@@ -86,22 +68,13 @@
                       </div>
                     </div>
                     <div class="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        class="h-10 w-10 sm:h-8 sm:w-8"
-                        @click="handleDecrementCustom(item.id)"
-                        :disabled="item.count === 0"
-                      >
+                      <Button variant="outline" size="icon" class="h-10 w-10 sm:h-8 sm:w-8"
+                        @click="handleDecrementCustom(item.id)" :disabled="item.count === 0">
                         <span>-</span>
                       </Button>
                       <span class="w-8 text-center">{{ item.count }}</span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        class="h-10 w-10 sm:h-8 sm:w-8"
-                        @click="handleIncrementCustom(item.id)"
-                      >
+                      <Button variant="outline" size="icon" class="h-10 w-10 sm:h-8 sm:w-8"
+                        @click="handleIncrementCustom(item.id)">
                         <span>+</span>
                       </Button>
                     </div>
@@ -112,25 +85,16 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div class="sm:col-span-2">
-                    <Input
-                      placeholder="Adicionar outro item..."
-                      v-model="customItemName"
-                    />
+                    <Input placeholder="Adicionar outro item..." v-model="customItemName" />
                   </div>
                   <div>
-                    <Input
-                      placeholder="Preço"
-                      inputmode="decimal"
-                      v-model="customItemPrice"
-                    />
+                    <Input placeholder="Preço" inputmode="decimal" v-model="customItemPrice" />
                   </div>
                 </div>
 
-                <Button
-                  @click="handleAddCustomItem"
+                <Button @click="handleAddCustomItem"
                   :disabled="!customItemName.trim() || !(Number.parseFloat(customItemPrice) > 0)"
-                  class="w-full py-6 sm:py-2"
-                >
+                  class="w-full py-6 sm:py-2">
                   <Plus class="h-4 w-4 mr-1" />
                   <span>Adicionar Item</span>
                 </Button>
@@ -145,15 +109,9 @@
 
                   <div class="h-[30vh] sm:h-[35vh] mx-auto overflow-hidden">
                     <div v-if="totalSales > 0" class="h-full w-full">
-                      <BarChart
-                        index="id"
-                        :data="chartData"
-                        :categories="['value']"
+                      <BarChart index="id" :data="chartData" :categories="['value']"
                         :y-formatter="(tick) => `R$ ${typeof tick === 'number' ? tick.toFixed(2) : ''}`"
-                        :colors="['rgba(75, 192, 192, 0.6)']"
-                        :rounded-corners="4"
-                        class="h-full max-h-full"
-                      />
+                        :colors="['rgba(75, 192, 192, 0.6)']" :rounded-corners="4" class="h-full max-h-full" />
                     </div>
                     <div v-else class="h-full flex items-center justify-center text-center">
                       <div class="text-gray-500">
@@ -171,7 +129,7 @@
                     <div class="flex justify-between">
                       <span class="text-gray-600">Itens Diferentes:</span>
                       <span class="font-bold">
-                        {{ [...items, ...customItems].filter(item => item.count > 0).length }}
+                        {{[...items, ...customItems].filter(item => item.count > 0).length}}
                       </span>
                     </div>
                   </div>
@@ -186,11 +144,7 @@
               <Button variant="outline" @click="onClose" class="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button
-                @click="handleSave"
-                :disabled="totalSales <= 0 || !hasChanges"
-                class="w-full sm:w-auto"
-              >
+              <Button @click="handleSave" :disabled="totalSales <= 0 || !hasChanges" class="w-full sm:w-auto">
                 {{ hasChanges ? 'Salvar' : 'Fechar' }}
               </Button>
             </div>
@@ -288,7 +242,7 @@ export default defineComponent({
     const loadedVendas = ref<{ [key: string]: LoadedVenda[] }>({});
     const loadedCustomVendas = ref<{ [key: string]: LoadedVenda[] }>({});
 
-    const initialItemValues = ref<{[key: string]: number}>({});
+    const initialItemValues = ref<{ [key: string]: number }>({});
     const initialCustomItems = ref<SaleItem[]>([]);
     const hasChanges = computed(() => {
       const standardItemsChanged = items.value.some(item => {
@@ -299,8 +253,8 @@ export default defineComponent({
         customItems.value.some((item, idx) => {
           if (idx >= initialCustomItems.value.length) return true;
           return item.count !== initialCustomItems.value[idx].count ||
-                 item.name !== initialCustomItems.value[idx].name ||
-                 item.price !== initialCustomItems.value[idx].price;
+            item.name !== initialCustomItems.value[idx].name ||
+            item.price !== initialCustomItems.value[idx].price;
         });
 
       return standardItemsChanged || customItemsChanged;
@@ -489,7 +443,7 @@ export default defineComponent({
         const dateStr = formatDateStr(props.date);
         const dayVendas = await vendaService.getVendaByDate(dateStr);
 
-        items.value = items.value.map(item => ({...item, count: 0}));
+        items.value = items.value.map(item => ({ ...item, count: 0 }));
         customItems.value = [];
         loadedVendas.value = {};
         loadedCustomVendas.value = {};
@@ -601,7 +555,7 @@ export default defineComponent({
               const newCount = item.count - loadedCount;
               const venda = {
                 date: formatDateForBackend(props.date),
-                itemType: itemType,
+                itemType: itemType as "REFRI_COPO" | "REFRI_GARRAFA" | "PICOLE" | "CARTELA_BINGO" | "CORREIO_ELEGANTE" | "OUTROS",
                 quantity: newCount,
                 unitPrice: item.price,
                 totalPrice: newCount * item.price,
@@ -637,7 +591,7 @@ export default defineComponent({
               const newCount = item.count - loadedCount;
               const venda = {
                 date: formatDateForBackend(props.date),
-                itemType: 'OUTROS',
+                itemType: "OUTROS" as "REFRI_COPO" | "REFRI_GARRAFA" | "PICOLE" | "CARTELA_BINGO" | "CORREIO_ELEGANTE" | "OUTROS",
                 quantity: newCount,
                 unitPrice: item.price,
                 totalPrice: newCount * item.price,
@@ -745,6 +699,7 @@ export default defineComponent({
 }
 
 @media (max-width: 640px) {
+
   .modal-fade-enter-from .bg-white,
   .modal-fade-leave-to .bg-white {
     transform: translateY(100%);
@@ -752,6 +707,7 @@ export default defineComponent({
 }
 
 @media (min-width: 641px) {
+
   .modal-fade-enter-from .bg-white,
   .modal-fade-leave-to .bg-white {
     transform: scale(0.9) translateY(20px);
@@ -760,6 +716,7 @@ export default defineComponent({
 
 /* Melhor suporte a gestos de arrasto para mobile com sheet */
 @media (max-width: 640px) {
+
   .modal-fade-enter-active .bg-white,
   .modal-fade-leave-active .bg-white {
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);

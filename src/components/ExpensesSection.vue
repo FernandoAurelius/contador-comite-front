@@ -145,6 +145,8 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Search, Plus, DollarSign, FileText, Calendar } from 'lucide-vue-next';
+// Importar o tipo DateValue
+import type { DateValue } from '@/components/ui/calendar';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -247,8 +249,10 @@ export default {
     formatCurrency(value: number) {
       return value.toFixed(2).replace('.', ',');
     },
-    onDateSelect(date: Date) {
-      this.newExpense.date = this.formatDateForBackend(date);
+    onDateSelect(date: DateValue) {
+      // Converter DateValue para Date, depois para string no formato necessário
+      const jsDate = new Date(date.year, date.month - 1, date.day);
+      this.newExpense.date = this.formatDateForBackend(jsDate);
       this.isCalendarOpen = false;
     },
     async handleAddExpense() {
