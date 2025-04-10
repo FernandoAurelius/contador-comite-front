@@ -1,8 +1,8 @@
 {
     "rewrites": [
         {
-            "source": "/api/(.*)",
-            "destination": "https://api.formatura.floresdev.com.br"
+            "source": "/api/:path(.*)",
+            "destination": "https://api.formatura.floresdev.com.br/api/:path"
         },
         {
             "source": "/(.*)",
