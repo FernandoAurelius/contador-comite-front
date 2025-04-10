@@ -71,8 +71,8 @@
       </div>
     </footer>
 
-    <!-- Mobile bottom navigation -->
-    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-30">
+    <!-- Mobile bottom navigation - Agora condicionalmente exibido apenas para usuários logados -->
+    <div v-if="logged" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-30">
       <div class="flex justify-around py-2">
         <router-link
           v-for="item in mobileNavItems"
@@ -87,8 +87,8 @@
       </div>
     </div>
 
-    <!-- Mobile Add button -->
-    <div class="fixed bottom-16 right-4 md:hidden">
+    <!-- Mobile Add button - Também condicionalmente exibido apenas para usuários logados -->
+    <div v-if="logged" class="fixed bottom-16 right-4 md:hidden">
       <Button
         size="lg"
         class="rounded-full h-14 w-14 shadow-lg"
