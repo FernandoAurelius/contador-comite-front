@@ -7,7 +7,7 @@
 
 ## Visão Geral
 
-Interface de usuário para o sistema Contador Comitê, desenvolvido para gestão financeira de comitês de formatura. Este frontend oferece uma interface moderna, responsiva e intuitiva para controle de receitas, despesas e geração de relatórios financeiros.
+Interface de usuário para o sistema de contagem de receita do Comitê de Formatura do CEMI do Cruzeiro para o Terceiro Ano de 2025. Este frontend oferece uma interface moderna, responsiva e intuitiva para controle de receitas, despesas e geração de relatórios financeiros.
 
 ## Funcionalidades
 
