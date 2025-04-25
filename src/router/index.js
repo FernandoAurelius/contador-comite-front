@@ -5,9 +5,11 @@ import RegisterView from '@/views/RegisterView.vue';
 import authService from '@/api/authService';
 import VendasView from '@/views/VendasView.vue';
 import RelatoriosView from '@/views/ReportsView.vue';
+import NotFoundView from '@/views/NotFoundView.vue';
 import AdminBankStatementsView from '@/views/AdminBankStatementsView.vue';
 import PublicBankStatementsView from '@/views/PublicBankStatementsView.vue';
 import PublicGoalView from '@/views/PublicGoalView.vue';
+import { useAuthStore } from '@/stores/auth';
 // Registrando os componentes explicitamente para evitar problemas de carregamento
 const routes = [
     {
@@ -75,14 +77,14 @@ const routes = [
             title: 'Meta de Arrecadação - Contador Comitê'
         }
     },
-    // {
-    //   path: '/:pathMatch(.*)*',
-    //   name: 'not-found',
-    //   component: NotFoundView,
-    //   meta: {
-    //     title: 'Página não encontrada - Contador Comitê'
-    //   }
-    // },
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'not-found',
+        component: NotFoundView,
+        meta: {
+            title: 'Página não encontrada - Contador Comitê'
+        }
+    }
 ];
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -103,8 +105,21 @@ router.beforeEach(async (to, from) => {
         const logged = await authService.userIsLogged();
         // Lista de rotas públicas que não necessitam de autenticação
         const publicRoutes = ["login", "register", "publicExtratos", "publicMeta"];
+        // Log adicional para rota administrativa
+        if (to.name === 'adminExtratos') {
+            console.log('Tentativa de acesso à rota administrativa:', to.path);
+            console.log('Usuário está autenticado:', logged);
+            // Verificar informações do usuário no store
+            const authStore = useAuthStore();
+            console.log('Dados do usuário:', {
+                name: authStore.user?.name,
+                email: authStore.user?.email,
+                role: authStore.user?.role
+            });
+        }
         // Verificar se a rota requer autenticação e o usuário não está logado
         if (!publicRoutes.includes(to.name) && !logged) {
+            console.log('Redirecionando para login: usuário não autenticado');
             return { path: "/login" };
         }
         document.title = to.meta.title || 'Contador Comitê';

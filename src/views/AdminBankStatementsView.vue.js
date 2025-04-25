@@ -62,9 +62,18 @@ export default defineComponent({
         // Verificar se o usuário é admin usando o sistema de autenticação existente
         onMounted(async () => {
             try {
+                console.log('Verificando permissões de administrador...');
+                console.log('Dados do usuário:', authStore.user);
                 isAdmin.value = authStore.user?.role === 'admin';
+                console.log('Usuário é admin?', isAdmin.value);
                 if (isAdmin.value) {
+                    console.log('Permissão concedida: carregando dados administrativos...');
                     await loadData();
+                }
+                else {
+                    console.warn('Acesso negado: usuário não tem permissão de administrador.');
+                    console.log('Role do usuário:', authStore.user?.role);
+                    toast.error('Você não tem permissão para acessar esta página.');
                 }
             }
             catch (error) {

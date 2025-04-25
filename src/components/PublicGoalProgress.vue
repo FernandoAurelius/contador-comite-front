@@ -15,31 +15,43 @@
           <div>
             <span class="block text-gray-500">Arrecadado</span>
             <span class="font-semibold text-lg text-emerald-600">
-              R$ {{ formatCurrency(goalStatus.currentAmount) }}
+              R$ {{ formatCurrency(meta.currentValue) }}
             </span>
           </div>
 
           <div class="text-right">
             <span class="block text-gray-500">Meta</span>
             <span class="font-semibold text-lg">
-              R$ {{ formatCurrency(goalStatus.goalAmount) }}
+              R$ {{ formatCurrency(meta.goalValue) }}
             </span>
           </div>
         </div>
 
         <div class="space-y-1.5">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium">{{ goalStatus.percentage.toFixed(1) }}% concluído</span>
+            <span class="text-xs font-medium">{{ calcularPorcentagem().toFixed(1) }}% concluído</span>
             <span class="text-xs font-medium">
-              Falta: R$ {{ formatCurrency(goalStatus.goalAmount - goalStatus.currentAmount) }}
+              Falta: R$ {{ formatCurrency(meta.goalValue - meta.currentValue) }}
             </span>
           </div>
-          <Progress :value="goalStatus.percentage" class="h-2.5" />
+          <Progress :value="calcularPorcentagem()" class="h-2.5" />
         </div>
 
         <p class="text-xs text-gray-500 text-right mt-2">
-          Última atualização: {{ formatDate(goalStatus.lastUpdate) }}
+          Última atualização: {{ formatDate(meta.startDate) }}
         </p>
+
+        <p v-if="meta.description" class="text-xs mt-2 text-gray-600">
+          {{ meta.description }}
+        </p>
+
+        <div v-if="meta.status !== 'ATIVA'"
+             :class="[
+               'text-xs font-medium px-2 py-1 rounded-full text-white inline-block mt-1',
+               meta.status === 'CONCLUIDA' ? 'bg-emerald-500' : 'bg-gray-500'
+             ]">
+          {{ meta.status === 'CONCLUIDA' ? 'Meta concluída' : 'Meta cancelada' }}
+        </div>
       </div>
     </CardContent>
   </Card>
@@ -51,8 +63,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import bankStatementService from '@/services/bankStatementService';
-import { GoalStatus } from '@/types/BankStatement';
+import metaService from '@/api/metaService';
+import Meta from '@/types/Meta';
 
 export default defineComponent({
   name: 'PublicGoalProgress',
@@ -66,16 +78,22 @@ export default defineComponent({
   },
   setup() {
     const loading = ref(true);
-    const goalStatus = ref<GoalStatus>({
-      currentAmount: 0,
-      goalAmount: 100000,
-      percentage: 0,
-      lastUpdate: new Date()
+    const meta = ref<Meta>({
+      id: 0,
+      description: "",
+      goalValue: 100000,
+      currentValue: 0,
+      startDate: new Date().toISOString(),
+      endDate: new Date().toISOString(),
+      status: "ATIVA"
     });
 
     onMounted(async () => {
       try {
-        goalStatus.value = await bankStatementService.getGoalStatus();
+        console.log('Carregando dados da meta...');
+        const metaData = await metaService.getMeta();
+        meta.value = metaData;
+        console.log('Dados da meta carregados:', meta.value);
       } catch (error) {
         console.error('Erro ao carregar dados da meta:', error);
       } finally {
@@ -83,19 +101,25 @@ export default defineComponent({
       }
     });
 
+    const calcularPorcentagem = (): number => {
+      if (meta.value.goalValue === 0) return 0;
+      return (meta.value.currentValue / meta.value.goalValue) * 100;
+    };
+
     const formatCurrency = (value: number): string => {
       return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
-    const formatDate = (date: Date | string): string => {
+    const formatDate = (date: string): string => {
       if (!date) return '';
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      const dateObj = new Date(date);
       return format(dateObj, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     };
 
     return {
       loading,
-      goalStatus,
+      meta,
+      calcularPorcentagem,
       formatCurrency,
       formatDate
     };
