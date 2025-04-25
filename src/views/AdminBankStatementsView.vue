@@ -313,13 +313,14 @@ import { defineComponent, ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import {
-  Button,
-  Card, CardHeader, CardTitle, CardDescription, CardContent,
-  Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
-  Input, Label, Progress, Select,
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription
-} from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Select } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Plus, FileText, Edit, Trash, Loader, FileX } from 'lucide-vue-next';
 import bankStatementService from '@/services/bankStatementService';
 import { useAuthStore } from '@/stores/auth';
