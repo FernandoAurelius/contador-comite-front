@@ -216,10 +216,16 @@ export default defineComponent({
     const handlePrevious = () => {
       if (currentWeekNumber.value > 0) {
         currentWeekNumber.value--;
-        // Selecionar o mesmo dia da semana ou o primeiro dia útil
-        const dayOfWeek = currentDay.value.getDay();
-        const newDay = visibleWeekDays.value.find(day => day.getDay() === dayOfWeek) || visibleWeekDays.value[0];
-        currentDay.value = newDay;
+
+        // Em vez de tentar encontrar diretamente, vamos usar nextTick para garantir que o Vue atualize visibleWeekDays
+        // Garantimos que primeiro o Vue atualize o valor computado visibleWeekDays
+        const previousWeekDays = allWeeks.value[currentWeekNumber.value] || [];
+        if (previousWeekDays.length > 0) {
+          // Selecionar o mesmo dia da semana ou o primeiro dia útil
+          const dayOfWeek = currentDay.value.getDay();
+          const newDay = previousWeekDays.find(day => day.getDay() === dayOfWeek) || previousWeekDays[0];
+          currentDay.value = newDay;
+        }
       }
     };
 
@@ -227,10 +233,15 @@ export default defineComponent({
     const handleNext = () => {
       if (currentWeekNumber.value < allWeeks.value.length - 1) {
         currentWeekNumber.value++;
-        // Selecionar o mesmo dia da semana ou o primeiro dia útil
-        const dayOfWeek = currentDay.value.getDay();
-        const newDay = visibleWeekDays.value.find(day => day.getDay() === dayOfWeek) || visibleWeekDays.value[0];
-        currentDay.value = newDay;
+
+        // Similar ao handlePrevious, trabalhamos diretamente com o array da nova semana
+        const nextWeekDays = allWeeks.value[currentWeekNumber.value] || [];
+        if (nextWeekDays.length > 0) {
+          // Selecionar o mesmo dia da semana ou o primeiro dia útil
+          const dayOfWeek = currentDay.value.getDay();
+          const newDay = nextWeekDays.find(day => day.getDay() === dayOfWeek) || nextWeekDays[0];
+          currentDay.value = newDay;
+        }
       }
     };
 
