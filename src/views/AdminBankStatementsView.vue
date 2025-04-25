@@ -390,7 +390,8 @@ export default defineComponent({
         console.log('Verificando permissões de administrador...');
         console.log('Dados do usuário:', authStore.user);
 
-        isAdmin.value = authStore.user?.role === 'admin';
+        // Corrigir a verificação para aceitar 'ADMIN' (maiúsculo)
+        isAdmin.value = authStore.user?.role === 'ADMIN';
         console.log('Usuário é admin?', isAdmin.value);
 
         if (isAdmin.value) {

@@ -10,6 +10,7 @@ import AdminBankStatementsView from '@/views/AdminBankStatementsView.vue';
 import PublicBankStatementsView from '@/views/PublicBankStatementsView.vue';
 import PublicGoalView from '@/views/PublicGoalView.vue';
 import { useAuthStore } from '@/stores/auth';
+import { toast } from 'vue-sonner';
 // Registrando os componentes explicitamente para evitar problemas de carregamento
 const routes = [
     {
@@ -111,11 +112,18 @@ router.beforeEach(async (to, from) => {
             console.log('Usuário está autenticado:', logged);
             // Verificar informações do usuário no store
             const authStore = useAuthStore();
+            const userRole = authStore.user?.role?.toUpperCase();
             console.log('Dados do usuário:', {
                 name: authStore.user?.name,
                 email: authStore.user?.email,
                 role: authStore.user?.role
             });
+            // Verificar se o usuário tem permissão para acessar a área admin
+            if (logged && userRole !== 'ADMIN') {
+                console.warn('Tentativa de acesso não autorizado à área administrativa');
+                toast.error('Você não tem permissão para acessar esta página.');
+                return { path: "/" };
+            }
         }
         // Verificar se a rota requer autenticação e o usuário não está logado
         if (!publicRoutes.includes(to.name) && !logged) {
