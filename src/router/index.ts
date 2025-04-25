@@ -6,6 +6,9 @@ import authService from '@/api/authService';
 import VendasView from '@/views/VendasView.vue';
 import RelatoriosView from '@/views/ReportsView.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
+import AdminBankStatementsView from '@/views/AdminBankStatementsView.vue';
+import PublicBankStatementsView from '@/views/PublicBankStatementsView.vue';
+import PublicGoalView from '@/views/PublicGoalView.vue';
 
 // Registrando os componentes explicitamente para evitar problemas de carregamento
 const routes: Array<RouteRecordRaw> = [
@@ -48,6 +51,22 @@ const routes: Array<RouteRecordRaw> = [
     meta: {
       title: 'Registro - Contador Comitê'
     }
+  },
+  {
+    path: '/admin/extratos',
+    name: 'adminExtratos',
+    component: AdminBankStatementsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/extratos',
+    name: 'publicExtratos',
+    component: PublicBankStatementsView
+  },
+  {
+    path: '/meta',
+    name: 'publicMeta',
+    component: PublicGoalView
   },
   {
     path: '/:pathMatch(.*)*',

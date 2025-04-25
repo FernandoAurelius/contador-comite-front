@@ -24,6 +24,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-vue": "^8.6.0",
+    "firebase": "^10.8.1",
     "framer-motion": "^12.6.3",
     "lucide-vue-next": "^0.487.0",
     "pinia": "^3.0.1",
