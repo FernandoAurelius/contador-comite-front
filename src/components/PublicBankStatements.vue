@@ -124,11 +124,11 @@
 import { defineComponent, ref, onMounted, computed } from 'vue';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
-  Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
-  Select, Label, Button
-} from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
+import { Select } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { FileX, X } from 'lucide-vue-next';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import bankStatementService from '@/services/bankStatementService';

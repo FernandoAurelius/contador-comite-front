@@ -49,7 +49,8 @@
 import { defineComponent, ref, onMounted } from 'vue';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import bankStatementService from '@/services/bankStatementService';
 import { GoalStatus } from '@/types/BankStatement';
 
