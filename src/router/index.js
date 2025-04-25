@@ -5,7 +5,9 @@ import RegisterView from '@/views/RegisterView.vue';
 import authService from '@/api/authService';
 import VendasView from '@/views/VendasView.vue';
 import RelatoriosView from '@/views/ReportsView.vue';
-import NotFoundView from '@/views/NotFoundView.vue';
+import AdminBankStatementsView from '@/views/AdminBankStatementsView.vue';
+import PublicBankStatementsView from '@/views/PublicBankStatementsView.vue';
+import PublicGoalView from '@/views/PublicGoalView.vue';
 // Registrando os componentes explicitamente para evitar problemas de carregamento
 const routes = [
     {
@@ -49,13 +51,38 @@ const routes = [
         }
     },
     {
-        path: '/:pathMatch(.*)*',
-        name: 'not-found',
-        component: NotFoundView,
+        path: '/admin/extratos',
+        name: 'adminExtratos',
+        component: AdminBankStatementsView,
         meta: {
-            title: 'Página não encontrada - Contador Comitê'
+            requiresAuth: true,
+            title: 'Administração de Extratos - Contador Comitê'
         }
     },
+    {
+        path: '/extratos',
+        name: 'publicExtratos',
+        component: PublicBankStatementsView,
+        meta: {
+            title: 'Extratos Bancários - Contador Comitê'
+        }
+    },
+    {
+        path: '/meta',
+        name: 'publicMeta',
+        component: PublicGoalView,
+        meta: {
+            title: 'Meta de Arrecadação - Contador Comitê'
+        }
+    },
+    // {
+    //   path: '/:pathMatch(.*)*',
+    //   name: 'not-found',
+    //   component: NotFoundView,
+    //   meta: {
+    //     title: 'Página não encontrada - Contador Comitê'
+    //   }
+    // },
 ];
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -74,8 +101,10 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
     try {
         const logged = await authService.userIsLogged();
-        // Nomes das rotas em minúsculas para consistência
-        if (to.name !== "login" && to.name !== "register" && !logged) {
+        // Lista de rotas públicas que não necessitam de autenticação
+        const publicRoutes = ["login", "register", "publicExtratos", "publicMeta"];
+        // Verificar se a rota requer autenticação e o usuário não está logado
+        if (!publicRoutes.includes(to.name) && !logged) {
             return { path: "/login" };
         }
         document.title = to.meta.title || 'Contador Comitê';

@@ -56,26 +56,35 @@ const routes: Array<RouteRecordRaw> = [
     path: '/admin/extratos',
     name: 'adminExtratos',
     component: AdminBankStatementsView,
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'Administração de Extratos - Contador Comitê'
+    }
   },
   {
     path: '/extratos',
     name: 'publicExtratos',
-    component: PublicBankStatementsView
+    component: PublicBankStatementsView,
+    meta: {
+      title: 'Extratos Bancários - Contador Comitê'
+    }
   },
   {
     path: '/meta',
     name: 'publicMeta',
-    component: PublicGoalView
-  },
-  {
-    path: '/:pathMatch(.*)*',
-    name: 'not-found',
-    component: NotFoundView,
+    component: PublicGoalView,
     meta: {
-      title: 'Página não encontrada - Contador Comitê'
+      title: 'Meta de Arrecadação - Contador Comitê'
     }
   },
+  // {
+  //   path: '/:pathMatch(.*)*',
+  //   name: 'not-found',
+  //   component: NotFoundView,
+  //   meta: {
+  //     title: 'Página não encontrada - Contador Comitê'
+  //   }
+  // },
 ];
 
 const router = createRouter({
@@ -96,8 +105,11 @@ router.beforeEach(async (to, from) => {
   try {
     const logged = await authService.userIsLogged();
 
-    // Nomes das rotas em minúsculas para consistência
-    if (to.name !== "login" && to.name !== "register" && !logged) {
+    // Lista de rotas públicas que não necessitam de autenticação
+    const publicRoutes = ["login", "register", "publicExtratos", "publicMeta"];
+
+    // Verificar se a rota requer autenticação e o usuário não está logado
+    if (!publicRoutes.includes(to.name as string) && !logged) {
       return { path: "/login" };
     }
 

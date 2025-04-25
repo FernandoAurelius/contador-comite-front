@@ -1,5 +1,5 @@
-import { defineComponent, computed, ref, watch } from 'vue';
-import { format, isToday, isSameDay, addDays, isWeekend, addWeeks } from 'date-fns';
+import { defineComponent, computed, ref, watch, nextTick } from 'vue';
+import { format, isToday, isSameDay, addDays, isWeekend, startOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,8 @@ export default defineComponent({
         const troteStore = useTroteStore();
         const currentDay = ref(new Date());
         const currentWeekNumber = ref(0);
-        const maxWeeks = ref(12); // Aproximadamente 3 meses (12 semanas)
+        const maxPastWeeks = ref(12); // Número de semanas no passado
+        const maxFutureWeeks = ref(12); // Número de semanas no futuro
         // Função para verificar se uma data é um dia de trote
         const isTroteDay = (date) => {
             const dateStr = formatDateStr(date);
@@ -48,13 +49,13 @@ export default defineComponent({
             const year = date.getFullYear();
             return `${day}-${month}-${year}`;
         };
-        // Obtém todas as semanas disponíveis (apenas com dias úteis)
+        // Obtém todas as semanas disponíveis (passadas e futuras)
         const allWeeks = computed(() => {
             const weeks = [];
             const today = new Date();
-            // Gerar semanas para os próximos 3 meses
-            for (let i = 0; i < maxWeeks.value; i++) {
-                const weekStartDate = addWeeks(today, i);
+            // Gerar semanas passadas
+            for (let i = maxPastWeeks.value; i > 0; i--) {
+                const weekStartDate = addDays(today, -7 * i);
                 const weekDays = [];
                 // Para cada semana, adicionar apenas os dias úteis (seg-sex)
                 for (let j = 0; j < 7; j++) {
@@ -67,8 +68,43 @@ export default defineComponent({
                     weeks.push(weekDays);
                 }
             }
+            // Semana atual
+            const currentWeekDays = [];
+            // Primeiro dia da semana atual (domingo)
+            const currentWeekStart = startOfWeek(today);
+            for (let j = 0; j < 7; j++) {
+                const day = addDays(currentWeekStart, j);
+                if (!isWeekend(day)) {
+                    currentWeekDays.push(day);
+                }
+            }
+            if (currentWeekDays.length > 0) {
+                weeks.push(currentWeekDays);
+            }
+            // Gerar semanas futuras
+            for (let i = 1; i <= maxFutureWeeks.value; i++) {
+                const weekStartDate = addDays(today, 7 * i);
+                const weekStartDay = startOfWeek(weekStartDate);
+                const weekDays = [];
+                // Para cada semana, adicionar apenas os dias úteis (seg-sex)
+                for (let j = 0; j < 7; j++) {
+                    const day = addDays(weekStartDay, j);
+                    if (!isWeekend(day)) {
+                        weekDays.push(day);
+                    }
+                }
+                if (weekDays.length > 0) {
+                    weeks.push(weekDays);
+                }
+            }
             return weeks;
         });
+        // Inicializa currentWeekNumber para apontar para a semana atual (meio do array)
+        const initialWeekIndex = computed(() => {
+            return maxPastWeeks.value;
+        });
+        // Inicializa currentWeekNumber
+        currentWeekNumber.value = initialWeekIndex.value;
         // Dias visíveis da semana atual
         const visibleWeekDays = computed(() => {
             return allWeeks.value[currentWeekNumber.value] || [];
@@ -133,20 +169,38 @@ export default defineComponent({
         const handlePrevious = () => {
             if (currentWeekNumber.value > 0) {
                 currentWeekNumber.value--;
-                // Selecionar o mesmo dia da semana ou o primeiro dia útil
-                const dayOfWeek = currentDay.value.getDay();
-                const newDay = visibleWeekDays.value.find(day => day.getDay() === dayOfWeek) || visibleWeekDays.value[0];
-                currentDay.value = newDay;
+                nextTick(() => {
+                    const previousWeekDays = allWeeks.value[currentWeekNumber.value];
+                    if (previousWeekDays && previousWeekDays.length > 0) {
+                        // Tentamos encontrar um dia da semana equivalente ao atual
+                        const dayOfWeek = currentDay.value.getDay();
+                        let newDay = previousWeekDays.find(day => day.getDay() === dayOfWeek);
+                        // Se não encontramos, pegamos a segunda-feira (ou o primeiro dia disponível)
+                        if (!newDay) {
+                            newDay = previousWeekDays.find(day => day.getDay() === 1) || previousWeekDays[0];
+                        }
+                        currentDay.value = newDay;
+                    }
+                });
             }
         };
         // Ir para próxima semana
         const handleNext = () => {
             if (currentWeekNumber.value < allWeeks.value.length - 1) {
                 currentWeekNumber.value++;
-                // Selecionar o mesmo dia da semana ou o primeiro dia útil
-                const dayOfWeek = currentDay.value.getDay();
-                const newDay = visibleWeekDays.value.find(day => day.getDay() === dayOfWeek) || visibleWeekDays.value[0];
-                currentDay.value = newDay;
+                nextTick(() => {
+                    const nextWeekDays = allWeeks.value[currentWeekNumber.value];
+                    if (nextWeekDays && nextWeekDays.length > 0) {
+                        // Tentamos encontrar um dia da semana equivalente ao atual
+                        const dayOfWeek = currentDay.value.getDay();
+                        let newDay = nextWeekDays.find(day => day.getDay() === dayOfWeek);
+                        // Se não encontramos, pegamos a segunda-feira (ou o primeiro dia disponível)
+                        if (!newDay) {
+                            newDay = nextWeekDays.find(day => day.getDay() === 1) || nextWeekDays[0];
+                        }
+                        currentDay.value = newDay;
+                    }
+                });
             }
         };
         // Selecionar um dia específico

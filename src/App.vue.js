@@ -274,79 +274,83 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
 (new Date().getFullYear());
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-30" },
-});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "flex justify-around py-2" },
-});
-for (const [item] of __VLS_getVForSourceType((__VLS_ctx.mobileNavItems))) {
-    const __VLS_52 = {}.RouterLink;
-    /** @type {[typeof __VLS_components.RouterLink, typeof __VLS_components.routerLink, typeof __VLS_components.RouterLink, typeof __VLS_components.routerLink, ]} */ ;
-    // @ts-ignore
-    const __VLS_53 = __VLS_asFunctionalComponent(__VLS_52, new __VLS_52({
-        key: (item.path),
-        to: (item.path),
-        ...{ class: "flex flex-col items-center px-3 py-1" },
-        ...{ class: (__VLS_ctx.$route.path === item.path ? 'text-emerald-600' : 'text-gray-700') },
-    }));
-    const __VLS_54 = __VLS_53({
-        key: (item.path),
-        to: (item.path),
-        ...{ class: "flex flex-col items-center px-3 py-1" },
-        ...{ class: (__VLS_ctx.$route.path === item.path ? 'text-emerald-600' : 'text-gray-700') },
-    }, ...__VLS_functionalComponentArgsRest(__VLS_53));
-    __VLS_55.slots.default;
-    const __VLS_56 = ((item.icon));
-    // @ts-ignore
-    const __VLS_57 = __VLS_asFunctionalComponent(__VLS_56, new __VLS_56({
-        ...{ class: "h-5 w-5" },
-    }));
-    const __VLS_58 = __VLS_57({
-        ...{ class: "h-5 w-5" },
-    }, ...__VLS_functionalComponentArgsRest(__VLS_57));
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-        ...{ class: "text-xs mt-1" },
+if (__VLS_ctx.logged) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-30" },
     });
-    (item.title);
-    var __VLS_55;
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "flex justify-around py-2" },
+    });
+    for (const [item] of __VLS_getVForSourceType((__VLS_ctx.mobileNavItems))) {
+        const __VLS_52 = {}.RouterLink;
+        /** @type {[typeof __VLS_components.RouterLink, typeof __VLS_components.routerLink, typeof __VLS_components.RouterLink, typeof __VLS_components.routerLink, ]} */ ;
+        // @ts-ignore
+        const __VLS_53 = __VLS_asFunctionalComponent(__VLS_52, new __VLS_52({
+            key: (item.path),
+            to: (item.path),
+            ...{ class: "flex flex-col items-center px-3 py-1" },
+            ...{ class: (__VLS_ctx.$route.path === item.path ? 'text-emerald-600' : 'text-gray-700') },
+        }));
+        const __VLS_54 = __VLS_53({
+            key: (item.path),
+            to: (item.path),
+            ...{ class: "flex flex-col items-center px-3 py-1" },
+            ...{ class: (__VLS_ctx.$route.path === item.path ? 'text-emerald-600' : 'text-gray-700') },
+        }, ...__VLS_functionalComponentArgsRest(__VLS_53));
+        __VLS_55.slots.default;
+        const __VLS_56 = ((item.icon));
+        // @ts-ignore
+        const __VLS_57 = __VLS_asFunctionalComponent(__VLS_56, new __VLS_56({
+            ...{ class: "h-5 w-5" },
+        }));
+        const __VLS_58 = __VLS_57({
+            ...{ class: "h-5 w-5" },
+        }, ...__VLS_functionalComponentArgsRest(__VLS_57));
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+            ...{ class: "text-xs mt-1" },
+        });
+        (item.title);
+        var __VLS_55;
+    }
 }
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "fixed bottom-16 right-4 md:hidden" },
-});
-const __VLS_60 = {}.Button;
-/** @type {[typeof __VLS_components.Button, typeof __VLS_components.Button, ]} */ ;
-// @ts-ignore
-const __VLS_61 = __VLS_asFunctionalComponent(__VLS_60, new __VLS_60({
-    ...{ 'onClick': {} },
-    size: "lg",
-    ...{ class: "rounded-full h-14 w-14 shadow-lg" },
-}));
-const __VLS_62 = __VLS_61({
-    ...{ 'onClick': {} },
-    size: "lg",
-    ...{ class: "rounded-full h-14 w-14 shadow-lg" },
-}, ...__VLS_functionalComponentArgsRest(__VLS_61));
-let __VLS_64;
-let __VLS_65;
-let __VLS_66;
-const __VLS_67 = {
-    onClick: (__VLS_ctx.openAddModal)
-};
-__VLS_63.slots.default;
-const __VLS_68 = {}.Plus;
-/** @type {[typeof __VLS_components.Plus, ]} */ ;
-// @ts-ignore
-const __VLS_69 = __VLS_asFunctionalComponent(__VLS_68, new __VLS_68({
-    ...{ class: "h-6 w-6" },
-}));
-const __VLS_70 = __VLS_69({
-    ...{ class: "h-6 w-6" },
-}, ...__VLS_functionalComponentArgsRest(__VLS_69));
-__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-    ...{ class: "sr-only" },
-});
-var __VLS_63;
+if (__VLS_ctx.logged) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "fixed bottom-16 right-4 md:hidden" },
+    });
+    const __VLS_60 = {}.Button;
+    /** @type {[typeof __VLS_components.Button, typeof __VLS_components.Button, ]} */ ;
+    // @ts-ignore
+    const __VLS_61 = __VLS_asFunctionalComponent(__VLS_60, new __VLS_60({
+        ...{ 'onClick': {} },
+        size: "lg",
+        ...{ class: "rounded-full h-14 w-14 shadow-lg" },
+    }));
+    const __VLS_62 = __VLS_61({
+        ...{ 'onClick': {} },
+        size: "lg",
+        ...{ class: "rounded-full h-14 w-14 shadow-lg" },
+    }, ...__VLS_functionalComponentArgsRest(__VLS_61));
+    let __VLS_64;
+    let __VLS_65;
+    let __VLS_66;
+    const __VLS_67 = {
+        onClick: (__VLS_ctx.openAddModal)
+    };
+    __VLS_63.slots.default;
+    const __VLS_68 = {}.Plus;
+    /** @type {[typeof __VLS_components.Plus, ]} */ ;
+    // @ts-ignore
+    const __VLS_69 = __VLS_asFunctionalComponent(__VLS_68, new __VLS_68({
+        ...{ class: "h-6 w-6" },
+    }));
+    const __VLS_70 = __VLS_69({
+        ...{ class: "h-6 w-6" },
+    }, ...__VLS_functionalComponentArgsRest(__VLS_69));
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+        ...{ class: "sr-only" },
+    });
+    var __VLS_63;
+}
 if (__VLS_ctx.isDayModalOpen) {
     const __VLS_72 = {}.DayModal;
     /** @type {[typeof __VLS_components.DayModal, ]} */ ;

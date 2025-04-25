@@ -1,6 +1,6 @@
 import axios from 'axios';
 const api = axios.create({
-    baseURL: "/api",
+    baseURL: "https://api.formatura.floresdev.com.br/api",
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json'
