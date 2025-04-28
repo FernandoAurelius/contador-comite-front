@@ -421,13 +421,13 @@ export default defineComponent({
     };
 
     const handleAddCustomItem = () => {
-      if (customItemName.value.trim() && Number.parseFloat(customItemPrice.value) > 0) {
+      if (customItemName.value.trim() && Number.parseFloat(customItemPrice.value.replace(',', '.')) > 0) {
         const newItem: SaleItem = {
           id: `custom-${Date.now()}`,
           name: customItemName.value.trim(),
           icon: Plus,
           count: 0,
-          price: Number.parseFloat(customItemPrice.value),
+          price: Number.parseFloat(customItemPrice.value.replace(',', '.')),
         };
         customItems.value.push(newItem);
         customItemName.value = '';
